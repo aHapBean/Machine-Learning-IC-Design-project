@@ -1,0 +1,5 @@
+ABC command line: "read ../project/InitialAIG/train/alu2.aig; refactor; balance; rewrite -z; rewrite -z; refactor; rewrite -z; rewrite; read_lib ../project/lib/7nm/7nm.lib; write alu2_0633032.aig; print_stats".
+
+Library "asap7sc7p5t_22b_AO_RVT_SS_170906" from "../project/lib/7nm/7nm.lib" has 155 cells (0 skipped: 0 seq; 0 tri-state; 0 no func; 0 dont_use).  Time =     0.87 sec
+Warning: Detected 2 multi-output gates (for example, "FAx1_ASAP7_75t_R").
+[1;37m../project/InitialAIG/train/alu2:[0m i/o =   10/    6  lat =    0  and =    358  lev = 33

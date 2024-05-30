@@ -1,0 +1,21 @@
+安装过的东西：
+首先是 yosys，链接：
+
+https://static.kancloud.cn/dlover/fpga/1797858
+
+然后是 abcPy
+
+
+https://blog.csdn.net/skyyzq/article/details/113417832
+
+
+
+
+https://blog.csdn.net/Go_ahead_forever/article/details/133755918#%E8%A7%A3%E5%86%B3
+
+tmp solution:
+export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
+
+sudo apt install mpich
+
+sudo password : 1

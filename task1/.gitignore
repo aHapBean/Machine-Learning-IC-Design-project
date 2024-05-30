@@ -1,0 +1,9 @@
+*.aig
+*.history
+
+abc/
+abc_py/
+project/
+*.whl
+*.zip
+*.txt
