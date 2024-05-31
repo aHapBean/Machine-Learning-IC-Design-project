@@ -1,9 +1,10 @@
 *.aig
 *.history
-
+__pycache__/
 abc/
 abc_py/
 project/
 *.whl
 *.zip
 *.txt
+*.log
