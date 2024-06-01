@@ -113,7 +113,7 @@ def main():
             predicted = predict_reward(childFile)       # 要用模型来预测 reward
             childScores.append(predicted)
             childs.append(childFile)
-        action = np.argmin(childScores)
+        action = np.argmin(childScores)     # FIXME: argmax or argmin ? 
         AIG = childs[action]
 
     print(AIG)
