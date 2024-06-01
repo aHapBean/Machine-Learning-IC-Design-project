@@ -4,6 +4,8 @@
 abc/
 abc_py/
 project/
+task1_copy/
 *.whl
 *.zip
 *.txt
+*.log

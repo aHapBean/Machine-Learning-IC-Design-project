@@ -37,7 +37,8 @@ class GCN(torch.nn.Module):
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
-        x = x.unsqueeze(-1).float()
+        # print()
+        # x = x.unsqueeze(-1).float()
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = self.conv2(x, edge_index)

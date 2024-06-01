@@ -62,26 +62,37 @@ def get_graph_data(state, lbl):
     edge_src_index = []
     edge_target_index = []
 
+    node_features = np.zeros((numNodes, 2), dtype=float)
+    
+    
     for nodeIdx in range(numNodes):
         aigNode = _abc.aigNode(nodeIdx)
         nodeType = aigNode.nodeType()
         data['num_inverted_predecessors'][nodeIdx] = 0
         if nodeType == 0 or nodeType == 2:
             data['node_type'][nodeIdx] = 0
+            node_features[nodeIdx, 0] = 0
         elif nodeType == 1:
             data['node_type'][nodeIdx] = 1
+            node_features[nodeIdx, 0] = 1
         else:
             data['node_type'][nodeIdx] = 2
+            node_features[nodeIdx, 0] = 2
         
         if nodeType == 4:
             data['num_inverted_predecessors'][nodeIdx] = 1
-        if nodeType == 5:
+            node_features[nodeIdx, 1] = 1
+        elif nodeType == 5:
             data['num_inverted_predecessors'][nodeIdx] = 2
+            node_features[nodeIdx, 1] = 2
+        else:
+            node_features[nodeIdx, 1] = 0   # NOTE
             
-        if aigNode.hasFanin0():
+        if aigNode.hasFanin0():     # 这个应该是接口吧
             fanin = aigNode.fanin0()
             edge_src_index.append(nodeIdx)
             edge_target_index.append(fanin)
+            
         if aigNode.hasFanin1():
             fanin = aigNode.fanin1()
             edge_src_index.append(nodeIdx)
@@ -89,6 +100,7 @@ def get_graph_data(state, lbl):
     data['edge_index'] = torch.tensor([edge_src_index, edge_target_index], dtype=torch.long)
     data['node_type'] = torch.tensor(data['node_type'], dtype=torch.float) # NOTE float
     data['num_inverted_predecessors'] = torch.tensor(data['num_inverted_predecessors'])
+    data['node_features'] = torch.tensor(node_features, dtype=torch.float)
     """
     `num_inverted_predecessors`是一个表示节点（AIG图中的节点）的反转输入的数量的特征。在AIG图中，每个节点可以有零个、一个或两个输入。如果一个节点的输入是反转的（即是一个NOT门），那么它的`num_inverted_predecessors`特征将表示输入中有多少个是反转的。
 
@@ -98,10 +110,10 @@ def get_graph_data(state, lbl):
 
     # print(data)
 
-    node_features = data['node_type']   # FIXME 这里需要revise
+    node_features = data['node_features']   # Num node, 2
     edge_index = data['edge_index']
 
-    graph_data = Data(x=node_features, edge_index=edge_index, y=torch.tensor(lbl))
+    graph_data = Data(x=node_features, edge_index=edge_index, y=torch.tensor([lbl]))        # to [1,]
     return graph_data
 
 from tqdm import tqdm 
@@ -113,9 +125,12 @@ def train(model, device, dataset, optimizer, criterion):
         state, lbl = data
         # lbl = lbl.to(device)
         optimizer.zero_grad()
+        # print(lbl)
         
         graph_data = get_graph_data(state, lbl).to(device)
         output = model(graph_data)
+        # print(graph_data.y.shape, ' ', output.shape)
+        # print(graph_data.y)
         loss = criterion(output, graph_data.y)
         loss.backward()
         optimizer.step()
@@ -151,7 +166,7 @@ def main(args):
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
 
-    model = GCN(num_node_features=1).to(device)  
+    model = GCN(num_node_features=2).to(device)  
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     criterion = torch.nn.MSELoss() 
 
