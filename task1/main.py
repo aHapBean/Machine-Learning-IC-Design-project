@@ -89,7 +89,10 @@ def main(args):
         mse, mae = test(model, device, test_loader, criterion=criterion)
         if mse < best_mse:
             best_mse = mse
+        
+        if mae < best_mae:  # NOTE here seperate MSE and MAE
             best_mae = mae
+            
         log_message(f'Time: {time.time() - time_start:.2f} Epoch: {epoch+1}, Loss: {train_loss:.4f}, Test MSE: {mse:.4f}, Best MSE: {best_mse:.4f}, Test MAE: {mae: .4f}, Best MAE: {best_mae:.4f}', log_file)
         
 
