@@ -112,7 +112,7 @@ def main():
 
     print(AIG)
 
-    # 此处的 AIG 如 alu4_5250010256.aig，InitialAIG 不存在这种文件，要如何生成？
+    # FIXME 此处的 AIG 如 alu4_5250010256.aig，InitialAIG 不存在这种文件，要如何生成？
     abcRunCmd = "yosys-abc -c \"read " + AIG + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
     print(abcRunCmd)
     os.system(abcRunCmd)
