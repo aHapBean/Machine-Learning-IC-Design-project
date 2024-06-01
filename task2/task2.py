@@ -69,8 +69,6 @@ def get_pkl_data():
     AIG: such as alu2_0362351640.aig
     每个这样的 AIG 文件对应一个 .pkl 文件，如 adder_1010.pkl 对应 adder_4000021242.aig
     每个 .pkl 文件里有一个字典，包含了 adder_, adder_4, ..., adder_4000021242 这 10 个 step 和其对应的所有 rewards (len=10)
-    rewards 就是该步骤的 score 减去第 10 个 step 的 score 的差值，所以说 rewards[9] = 0，必定为 0
-    感觉搜索的目的，就是尽可能地在最小的 step i 下，让 rewards[i] = 0
     """
     import pickle
     import os
