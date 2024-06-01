@@ -7,23 +7,6 @@ import abc_py
 from torch_geometric.data import Data
 from model import GCN
 
-base_path = '../project/'
-
-# Define the initial state and extract the circuit name and actions performed
-state = 'alu2_0130622'
-circuitName, actions = state.split('_')
-circuitPath = os.path.join(base_path, 'InitialAIG/train/' + circuitName + '.aig')
-# print(circuitPath)
-
-libFile = os.path.join(base_path, 'lib/7nm/7nm.lib')
-
-if not os.path.exists(circuitPath) or not os.path.exists(libFile):
-    raise ValueError('path error')
-
-logFile = 'alu2.log'
-nextState = state + '.aig'  # current AIG file
-
-# Mapping action indices to their corresponding synthesis operations
 synthesisOpToPosDic = {
     0: "refactor",
     1: "refactor -z",
@@ -34,165 +17,108 @@ synthesisOpToPosDic = {
     6: "balance"
 }
 
-# Building the command string for synthesis operations
-actionCmd = ''
-for action in actions:
-    actionCmd += (synthesisOpToPosDic[int(action)] + '; ')
+BASEPATH = '../project/'
+RESYN2_CMD = "balance; rewrite; refactor; balance; rewrite; rewrite -z; balance; refactor -z; rewrite -z; balance;"
+LOGFILE = 'tmp.log'
+LIBFILE = os.path.join(BASEPATH, 'lib/7nm/7nm.lib')
 
-initial_abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + actionCmd + "read_lib " + libFile + "; write " + nextState + "; print_stats\" > " + logFile
+def cal_baseline(AIG, train=True, circuitPath=None, libFile=None):
+    """根据 InitialAIG 里面的文件来获取 AIG 的 baseline"""
+    state = AIG.split('.')[0]
+    logFile = state + LOGFILE
+    nextState = AIG  # current AIG file, 如 alu4.aig
 
-# Execute the synthesis command
-# os.system(abcRunCmd)
-# print(abcRunCmd)
+    if circuitPath is None or libFile is None:
+        if '_' in state: circuitName, actions = state.split('_')
+        else: circuitName = state
+        middle_dir = 'train' if train else 'test'
+        circuitPath = os.path.join(BASEPATH, f'InitialAIG/{middle_dir}/' + circuitName + '.aig')
+        libFile = LIBFILE
 
-# raise ValueError("The code below is not executed")
-
-# Function to evaluate the AIG with Yosys
-def evaluate_aig(AIG, libFile, logFile):
-    abcRunCmd = "yosys-abc -c \"read " + AIG + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
-    os.system(abcRunCmd)
-    with open(logFile) as f:
-        areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
-        eval = float(areaInformation[-9]) * float(areaInformation[-4])
-    return eval
-
-evaluate_score = evaluate_aig(circuitPath, libFile, logFile)
-print(evaluate_aig(circuitPath, libFile, logFile))
-
-# Regularizing the evaluation using resyn2
-def regularize_aig(eval):
-    RESYN2_CMD = "balance; rewrite; refactor; balance; rewrite; rewrite -z; balance; refactor -z; rewrite -z; balance;"
     abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + RESYN2_CMD + "read_lib " + libFile + "; write " + nextState + "; write_bench -l " + nextState + "; map; topo; stime\" > " + logFile
-    # abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + RESYN2_CMD + "read_lib " + libFile + ";" + " write_bench -l " + nextState + "; map; topo; stime\" > " + logFile
     os.system(abcRunCmd)
     with open(logFile) as f:
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
         baseline = float(areaInformation[-9]) * float(areaInformation[-4])
-        eval = 1 - eval / baseline
-        return eval
+    print("baseline:", baseline)
+    return baseline
 
-print(f'normalized: {regularize_aig(evaluate_score)}')  # NOTE
+def evaluate_AIG(AIG, train=True):
+    """根据 InitialAIG 里面的文件来获取 AIG 的 regularized score"""
+    state = AIG.split('.')[0]
+    if '_' in state: circuitName, actions = state.split('_')
+    else: circuitName = state
+    middle_dir = 'train' if train else 'test'
+    circuitPath = os.path.join(BASEPATH, f'InitialAIG/{middle_dir}/' + circuitName + '.aig')
+    libFile = LIBFILE
+    logFile = state + LOGFILE
+    # yosys-abc -c "read ../project/InitialAIG/train/alu2.aig; read_lib ../project/lib/7nm/7nm.lib; map; topo; stime" > alu2.log
+    abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
+    os.system(abcRunCmd)
+    with open(logFile) as f:
+        areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
+        eval = float(areaInformation[-9]) * float(areaInformation[-4])
+    baseline = cal_baseline(AIG, train, circuitPath, libFile)
+    regularized_eval = 1 - eval / baseline
+    print("eval:",regularized_eval)
+    return regularized_eval
 
-# raise ValueError
-# Building the AIG representation through node connectivity
+def get_pkl_data():
+    """
+    从 project_data2 的 .pkl 文件里读取有关 AIG 的数据
+    AIG: such as alu2_0362351640.aig
+    每个这样的 AIG 文件对应一个 .pkl 文件，如 adder_1010.pkl 对应 adder_4000021242.aig
+    每个 .pkl 文件里有一个字典，包含了 adder_, adder_4, ..., adder_4000021242 这 10 个 step 和其对应的所有 rewards (len=10)
+    rewards 就是该步骤的 score 减去第 10 个 step 的 score 的差值，所以说 rewards[9] = 0，必定为 0
+    感觉搜索的目的，就是尽可能地在最小的 step i 下，让 rewards[i] = 0
+    """
+    import pickle
+    import os
+    data_ls = os.listdir('../project/project_data2')
 
-os.system(initial_abcRunCmd)    # 注意这个要在上面这两个之后
+    AIG_data = {}
+    for file in data_ls:
+        with open(os.path.join('../project/project_data2', file), 'rb') as f:
+            data = pickle.load(f)
+            AIG_data[data['target'][9]] = data['target']
+    return AIG_data
 
-_abc = abc_py.AbcInterface()
-# abcpy.
-_abc.start()
-print(state + '.aig')
-# _abc.read(state + '.aig')
-_abc.read(state + '.aig')
-data = {}
+# alu2.aig 在 train 文件夹里面, train=True
+# alu4.aig 在 test 文件夹里面, test=False
+#evaluate_AIG('alu2.aig', train=True)
 
-numNodes = _abc.numNodes()
-data['node_type'] = np.zeros(numNodes, dtype=int)
-data['num_inverted_predecessors'] = np.zeros(numNodes, dtype=int)
-edge_src_index = []
-edge_target_index = []
+def predict_reward(AIG):
+    """AIG: such as alu2_32.aig"""
+    return np.random.rand()
 
-for nodeIdx in range(numNodes):
-    aigNode = _abc.aigNode(nodeIdx)
-    nodeType = aigNode.nodeType()
-    data['num_inverted_predecessors'][nodeIdx] = 0
-    if nodeType == 0 or nodeType == 2:
-        data['node_type'][nodeIdx] = 0
-    elif nodeType == 1:
-        data['node_type'][nodeIdx] = 1
-    else:
-        data['node_type'][nodeIdx] = 2
-    if nodeType == 4:
-        data['num_inverted_predecessors'][nodeIdx] = 1
-    if nodeType == 5:
-        data['num_inverted_predecessors'][nodeIdx] = 2
-    if aigNode.hasFanin0():
-        fanin = aigNode.fanin0()
-        edge_src_index.append(nodeIdx)
-        edge_target_index.append(fanin)
-    if aigNode.hasFanin1():
-        fanin = aigNode.fanin1()
-        edge_src_index.append(nodeIdx)
-        edge_target_index.append(fanin)
-data['edge_index'] = torch.tensor([edge_src_index, edge_target_index], dtype=torch.long)
-data['node_type'] = torch.tensor(data['node_type'], dtype=torch.double) # NOTE float
-data['num_inverted_predecessors'] = torch.tensor(data['num_inverted_predecessors'])
-data['nodes'] = numNodes
+def main():
+    AIG = 'alu4.aig'
+    libFile = LIBFILE
+    logFile = 'tmp.log'
 
-print(data)
+    for step in range(10):
+        childs = []
+        cur_state = AIG.split('.')[0]
+        cur_state = cur_state + '_' if '_' not in cur_state else cur_state  # in the beginning
 
-node_features = data['node_type']
-edge_index = data['edge_index']
+        childScores = []
+        for child in range(7):
+            childFile = cur_state + str(child) + '.aig'
+            predicted = predict_reward(childFile)       # 要用模型来预测 reward
+            childScores.append(predicted)
+            childs.append(childFile)
+        action = np.argmin(childScores)
+        AIG = childs[action]
 
-graph_data = Data(x=node_features, edge_index=edge_index, y=torch.tensor(regularize_aig(evaluate_score)))
+    print(AIG)
 
-def test_task(graph_data):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GCN(num_node_features=1).to(device)
-    graph_data = graph_data.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-    criterion = torch.nn.MSELoss()
+    # 此处的 AIG 如 alu4_5250010256.aig，InitialAIG 不存在这种文件，要如何生成？
+    abcRunCmd = "yosys-abc -c \"read " + AIG + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
+    print(abcRunCmd)
+    os.system(abcRunCmd)
+    with open(logFile) as f:
+        areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
+        adpVal = float(areaInformation[-9]) * float(areaInformation[-4])
 
-    def train():
-        model.train()
-        optimizer.zero_grad()
-        out = model(graph_data)
-        loss = criterion(out, graph_data.y)
-        loss.backward()
-        optimizer.step()
-        return loss.item()
+main()
 
-    for epoch in range(200):
-        loss = train()
-        print(f'Epoch {epoch+1}, Loss: {loss:.4f}')
-        
-        
-    def test():
-        model.eval()
-        with torch.no_grad():
-            logits = model(graph_data)
-            test_mask = graph_data.test_mask
-            pred = logits[test_mask].max(1)[1]
-            correct = pred.eq(graph_data.y[test_mask]).sum().item()
-            acc = correct / test_mask.sum().item()
-        return acc
-
-    accuracy = test()
-    print(f'Test Accuracy: {accuracy:.4f}')
-
-
-
-### task2
-
-synthesisOpToPosDic = {
-    0: "refactor",
-    1: "refactor -z",
-    2: "rewrite",
-    3: "rewrite -z",
-    4: "resub",
-    5: "resub -z",
-    6: "balance"
-}
-
-AIG = 'alu4.aig'
-libFile = os.path.join(base_path, 'lib/7nm/7nm.lib')
-logFile = 'alu4.log'
-for step in range(10):
-    childs = []
-    for child in range(7):
-        childFile = 'alu4_' + str(child) + '.aig'
-        abcRunCmd = "./yosys-abc -c \"read " + AIG + "; " + synthesisOpToPosDic[child] + "; read_lib " + libFile + "; write " + childFile + "; print_stats\" > " + logFile
-        os.system(abcRunCmd)
-        childs.append(childFile)
-    childScores = [evaluate_aig(child, libFile, logFile) for child in childs]
-    action = np.argmax(childScores)
-    AIG = childs[action]
-
-abcRunCmd = "./yosys-abc -c \"read " + AIG + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
-os.system(abcRunCmd)
-with open(logFile) as f:
-    areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
-    adpVal = float(areaInformation[-9]) * float(areaInformation[-4])
-
-# ???
-reward = (baseline - adpVal) / baseline

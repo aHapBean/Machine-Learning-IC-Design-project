@@ -51,6 +51,7 @@ initial_abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + actionCmd + "r
 def evaluate_aig(AIG, libFile, logFile):
     abcRunCmd = "yosys-abc -c \"read " + AIG + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
     os.system(abcRunCmd)
+    print(abcRunCmd)
     with open(logFile) as f:
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
         eval = float(areaInformation[-9]) * float(areaInformation[-4])
