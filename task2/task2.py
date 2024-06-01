@@ -69,8 +69,6 @@ def get_pkl_data():
     AIG: such as alu2_0362351640.aig
     每个这样的 AIG 文件对应一个 .pkl 文件，如 adder_1010.pkl 对应 adder_4000021242.aig
     每个 .pkl 文件里有一个字典，包含了 adder_, adder_4, ..., adder_4000021242 这 10 个 step 和其对应的所有 rewards (len=10)
-    rewards 就是该步骤的 score 减去第 10 个 step 的 score 的差值，所以说 rewards[9] = 0，必定为 0
-    感觉搜索的目的，就是尽可能地在最小的 step i 下，让 rewards[i] = 0
     """
     import pickle
     import os
@@ -87,11 +85,19 @@ def get_pkl_data():
 # alu4.aig 在 test 文件夹里面, test=False
 #evaluate_AIG('alu2.aig', train=True)
 
+def clear_tmp_files():
+    os.system("rm -rf ../task2/*.log")
+    os.system("rm -rf ../task2/*.aig")
+    os.system("rm -rf ../project/test_aig_files/*.aig")
+
 def predict_reward(AIG):
     """AIG: such as alu2_32.aig"""
     return np.random.rand()
 
 def main():
+
+    clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
+
     AIG = 'alu4.aig'
     libFile = LIBFILE
     logFile = 'tmp.log'
@@ -107,18 +113,44 @@ def main():
             predicted = predict_reward(childFile)       # 要用模型来预测 reward
             childScores.append(predicted)
             childs.append(childFile)
-        action = np.argmin(childScores)
+        action = np.argmin(childScores)     # FIXME: argmax or argmin ? 
         AIG = childs[action]
 
     print(AIG)
 
-    # FIXME 此处的 AIG 如 alu4_5250010256.aig，InitialAIG 不存在这种文件，要如何生成？
-    abcRunCmd = "yosys-abc -c \"read " + AIG + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
+    # 生成 AIG 文件
+    synthesisOpToPosDic = {
+        0: "refactor",
+        1: "refactor -z",
+        2: "rewrite",
+        3: "rewrite -z",
+        4: "resub",
+        5: "resub -z",
+        6: "balance"
+    }
+
+    state = AIG.split('.')[0]
+    circuitName, actions = state.split('_')
+    circuitPath = os.path.join(BASEPATH, 'InitialAIG/test/' + circuitName + '.aig') # FIXME: train or test?
+    actionCmd = ''
+    for action in actions:
+        actionCmd += (synthesisOpToPosDic[int(action)] + '; ')
+    initial_abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + actionCmd + "read_lib " + libFile + "; write " + AIG + "; print_stats\" > " + logFile
+    os.system(initial_abcRunCmd) 
+    aig_dir = os.path.join(BASEPATH, 'test_aig_files')
+    os.system(f"mv {state}.aig {aig_dir}/")
+
+    abcRunCmd = "yosys-abc -c \"read " + f"{aig_dir}/{state}.aig" + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
     print(abcRunCmd)
     os.system(abcRunCmd)
     with open(logFile) as f:
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
         adpVal = float(areaInformation[-9]) * float(areaInformation[-4])
+
+    baseline = cal_baseline(AIG, circuitPath=circuitPath, libFile=libFile)
+    finalVal = (baseline - adpVal) / baseline
+
+    print(finalVal)
 
 main()
 
