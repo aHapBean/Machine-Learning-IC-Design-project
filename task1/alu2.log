@@ -1,5 +1,0 @@
-ABC command line: "read ../project/InitialAIG/train/adder.aig; resub; rewrite -z; balance; read_lib ../project/lib/7nm/7nm.lib; write adder_436.aig; print_stats".
-
-Library "asap7sc7p5t_22b_AO_RVT_SS_170906" from "../project/lib/7nm/7nm.lib" has 155 cells (0 skipped: 0 seq; 0 tri-state; 0 no func; 0 dont_use).  Time =     0.84 sec
-Warning: Detected 2 multi-output gates (for example, "FAx1_ASAP7_75t_R").
-[1;37m../project/InitialAIG/train/adder:[0m i/o =  256/  129  lat =    0  and =    894  lev =255

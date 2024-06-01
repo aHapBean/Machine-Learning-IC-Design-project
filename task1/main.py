@@ -1,11 +1,12 @@
 import os
 import numpy as np
 import torch
-from torch_geometric.data import Data
 from model import GCN
 from dataset import get_dataset
+from torch_geometric.data import Data
 import argparse
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
+from torch.utils.data import random_split
 import abc_py
 import time
 
@@ -117,42 +118,38 @@ def get_graph_data(state, lbl):
     return graph_data
 
 from tqdm import tqdm 
-def train(model, device, dataset, optimizer, criterion):
+def train(model, device, dataloader, optimizer, criterion):
     model.train()
     total_loss = 0
     # for data in dataset:
-    for data in tqdm(dataset, desc='Training dataset'):
-        state, lbl = data
-        # lbl = lbl.to(device)
+    for data in tqdm(dataloader, desc='Training dataset'):
+        data = data.to(device)
         optimizer.zero_grad()
         # print(lbl)
-        
-        graph_data = get_graph_data(state, lbl).to(device)
-        output = model(graph_data)
+    
+        output = model(data)
         # print(graph_data.y.shape, ' ', output.shape)
         # print(graph_data.y)
-        loss = criterion(output, graph_data.y)
+        loss = criterion(output, data.y)
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
-    print(output, ' ', graph_data.y)
-    return total_loss / len(dataset)
+    return total_loss / len(dataloader)
 
-def test(model, device, dataset, criterion):
+def test(model, device, dataloader, criterion):
     model.eval()
     total_mse = 0
     total_mae = 0
     with torch.no_grad():
-        for data in dataset:
-            state, lbl = data
-            graph_data = get_graph_data(state, lbl).to(device)
-            output = model(graph_data)
-            mse = criterion(output, graph_data.y).item()
-            mae = torch.abs(output - graph_data.y).mean().item()
+        for data in dataloader:
+            data = data.to(device)
+            output = model(data)
+            mse = criterion(output, data.y).item()
+            mae = torch.abs(output - data.y).mean().item()
             total_mse += mse
             total_mae += mae
-    avg_mse = total_mse / len(dataset)
-    avg_mae = total_mae / len(dataset)
+    avg_mse = total_mse / len(dataloader)
+    avg_mae = total_mae / len(dataloader)
     return avg_mse, avg_mae
 
 def main(args):
@@ -163,8 +160,9 @@ def main(args):
     print('Load over !')
     train_size = int(0.8 * len(dataset))
     test_size = len(dataset) - train_size
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-
+    train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
     model = GCN(num_node_features=2).to(device)  
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
@@ -172,8 +170,8 @@ def main(args):
 
     for epoch in range(args.max_epoch):  
         time_start = time.time()
-        train_loss = train(model, device, train_dataset, optimizer, criterion)
-        mse, mae = test(model, device, test_dataset, criterion=criterion)
+        train_loss = train(model, device, train_loader, optimizer, criterion)
+        mse, mae = test(model, device, test_loader, criterion=criterion)
         print(f'Time: {time.time() - time_start:.2f} Epoch: {epoch+1}, Loss: {train_loss:.4f}, Test MSE: {mse:.4f}, Test MAE: {mae: .4f}')
 
 def args_parser():
@@ -181,6 +179,7 @@ def args_parser():
     parser.add_argument('--data', type=str, default='../project/project_data', help='The path of data in task 1')
     parser.add_argument('--num-node-features', type=int, default=1)
     parser.add_argument('--max_epoch', type=int, default=200)
+    parser.add_argument('--batch-size', type=int, default=1)
     args = parser.parse_args()
     return args 
 

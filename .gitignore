@@ -1,6 +1,6 @@
 *.aig
 *.history
-
+__pycache__/
 abc/
 abc_py/
 project/
