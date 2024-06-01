@@ -35,26 +35,33 @@ import random
 #         return len(self.labels)
 
 class PYGDataset(InMemoryDataset):
-    def __init__(self, path, transform=None, pre_transform=None):
+    def __init__(self, path, size, transform=None, pre_transform=None):
         self.root = os.path.join(path, '..', 'pyg')
         self.path = path
+        self.size = size
         super(PYGDataset, self).__init__(self.root, transform, pre_transform)
         if not os.path.exists(self.processed_paths[0]):
             self.process()
         self.data, self.slices = torch.load(self.processed_paths[0])
-
+        self.size 
+        
     @property
     def raw_file_names(self):
         return os.listdir(self.path)
 
     @property
     def processed_file_names(self):
-        return ['data.pt']
+        return [f'data_{self.size}.pt']
 
     def process(self):
         data_list = []
         data_ls = os.listdir(self.path)
-        data_ls = random.sample(data_ls, 100)      # size of training dataset 
+        if type(self.size) == str and self.size == 'all':
+            print(f'sampled data: ALL !! Length: {len(data_ls)}')
+        else:
+            self.size = int(self.size)
+            data_ls = random.sample(data_ls, self.size)      # size of training dataset 
+            print('sampled data length', len(data_ls))
         self.data_ls = data_ls
         for data_file in tqdm(data_ls, desc="Processing data"):
             data_path = os.path.join(self.path, data_file)
@@ -123,33 +130,45 @@ class PYGDataset(InMemoryDataset):
         edge_src_index = []
         edge_target_index = []
 
+        node_features = np.zeros((numNodes, 2), dtype=float)
+        
+        
         for nodeIdx in range(numNodes):
             aigNode = _abc.aigNode(nodeIdx)
             nodeType = aigNode.nodeType()
             data['num_inverted_predecessors'][nodeIdx] = 0
             if nodeType == 0 or nodeType == 2:
                 data['node_type'][nodeIdx] = 0
+                node_features[nodeIdx, 0] = 0
             elif nodeType == 1:
                 data['node_type'][nodeIdx] = 1
+                node_features[nodeIdx, 0] = 1
             else:
                 data['node_type'][nodeIdx] = 2
+                node_features[nodeIdx, 0] = 2
             
             if nodeType == 4:
                 data['num_inverted_predecessors'][nodeIdx] = 1
-            if nodeType == 5:
+                node_features[nodeIdx, 1] = 1
+            elif nodeType == 5:
                 data['num_inverted_predecessors'][nodeIdx] = 2
+                node_features[nodeIdx, 1] = 2
+            else:
+                node_features[nodeIdx, 1] = 0   # NOTE
                 
-            if aigNode.hasFanin0():
+            if aigNode.hasFanin0():     # 这个应该是接口吧
                 fanin = aigNode.fanin0()
                 edge_src_index.append(nodeIdx)
                 edge_target_index.append(fanin)
+                
             if aigNode.hasFanin1():
                 fanin = aigNode.fanin1()
                 edge_src_index.append(nodeIdx)
                 edge_target_index.append(fanin) # "fanin"是指连接到一个逻辑门或电路节点的输入信号线的数量。换句话说，它表示一个逻辑门或电路节点接收的输入数量。对于一个逻辑门来说，它的输入线就是fanin。在布尔逻辑中，逻辑门的输入通常被称为"输入端"，而fanin表示逻辑门接收的输入端的数量。
         data['edge_index'] = torch.tensor([edge_src_index, edge_target_index], dtype=torch.long)
-        data['node_type'] = torch.tensor(data['node_type'], dtype=torch.float).reshape(-1, 1) # NOTE float
+        data['node_type'] = torch.tensor(data['node_type'], dtype=torch.float) # NOTE float
         data['num_inverted_predecessors'] = torch.tensor(data['num_inverted_predecessors'])
+        data['node_features'] = torch.tensor(node_features, dtype=torch.float)
         """
         `num_inverted_predecessors`是一个表示节点（AIG图中的节点）的反转输入的数量的特征。在AIG图中，每个节点可以有零个、一个或两个输入。如果一个节点的输入是反转的（即是一个NOT门），那么它的`num_inverted_predecessors`特征将表示输入中有多少个是反转的。
 
@@ -159,17 +178,17 @@ class PYGDataset(InMemoryDataset):
 
         # print(data)
 
-        node_features = data['node_type']   # FIXME 这里需要revise
+        node_features = data['node_features']   # Num node, 2
         edge_index = data['edge_index']
 
-        graph_data = Data(x=node_features, edge_index=edge_index, y=torch.tensor(lbl))
+        graph_data = Data(x=node_features, edge_index=edge_index, y=torch.tensor([lbl]))        # to [1,]
         return graph_data
     
     def __len__(self):
         return len(self.data.y)
 
-def get_dataset(path):
-    return PYGDataset(path)
+def get_dataset(path, size):
+    return PYGDataset(path, size)
 
 if __name__ == '__main__':
     get_dataset('../project/project_data')
