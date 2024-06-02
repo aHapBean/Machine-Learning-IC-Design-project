@@ -101,7 +101,7 @@ def main(args):
         time_start = time.time()
         train_loss = train(model, device, train_loader, optimizer, criterion)
         mse, mae = test(model, device, test_loader, criterion=criterion)
-        
+        # mse, mae = 0, 0
         if mse < best_mse:
             best_mse = mse
             ls_file = os.listdir(log_path)
@@ -111,7 +111,7 @@ def main(args):
                     flag = True
                     tmp_best = fl.replace('.pth', '').split('_')[-1]
                     # tmp_best = float(fl.split('_')[-1].split('.')[0])
-                    if best_mse < int(tmp_best):
+                    if best_mse < float(tmp_best):
                         os.remove(f'{log_path}/{fl}')
                         torch.save(model.state_dict(), f'{log_path}/best_mse_{best_mse:.5f}.pth')
                     break
@@ -125,14 +125,14 @@ def main(args):
                 flag = False
                 if fl.endswith('.pth') and 'best_mae' in fl:
                     flag = True
-                    tmp_best = int(fl.replace('.pth', '').split('_')[-1])
-                    # tmp_best = float(fl.split('_')[-1].split('.')[0])
-                    if best_mae < int(tmp_best):
+                    tmp_best = fl.replace('.pth', '').split('_')[-1]
+                    
+                    if best_mae < float(tmp_best):
                         os.remove(f'{log_path}/{fl}')
                         torch.save(model.state_dict(), f'{log_path}/best_mae_{best_mae:.5f}.pth')
                     break
-                if not flag:
-                    torch.save(model.state_dict(), f'{log_path}/best_mae_{best_mae:.5f}.pth')
+            if not flag:
+                torch.save(model.state_dict(), f'{log_path}/best_mae_{best_mae:.5f}.pth')
             
         log_message(f'Time: {time.time() - time_start:.2f} Epoch: {epoch+1}, Loss: {train_loss:.4f}, Test MSE: {mse:.4f}, Best MSE: {best_mse:.4f}, Test MAE: {mae: .4f}, Best MAE: {best_mae:.4f}', log_file)
         
