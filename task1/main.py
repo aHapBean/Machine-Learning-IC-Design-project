@@ -61,8 +61,12 @@ def main(args):
     log_path = './log'
     if not os.path.exists(log_path):
         os.makedirs(log_path)
+    log_path = f'{log_path}/size_{args.datasize}'
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+    
     current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-    log_file = f'{log_path}/log_{args.datasize}_size_{args.lr}_lr_{current_time}.txt'
+    log_file = f'{log_path}/log_{args.datasize}_size_{args.lr}_lr){args.batch_size}_bs_{current_time}.txt'
     log_message(str(args), log_file)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -73,6 +77,7 @@ def main(args):
     train_size = int(0.8 * len(dataset))
     test_size = len(dataset) - train_size
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+    print(f'Train length {len(train_dataset)}, Test length {len(test_dataset)}')
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
@@ -89,9 +94,27 @@ def main(args):
         mse, mae = test(model, device, test_loader, criterion=criterion)
         if mse < best_mse:
             best_mse = mse
+            ls_file = os.listdir(log_path)
+            for fl in ls_file:
+                if fl.endswith('.pth') and 'best_mse' in fl:
+                    tmp_best = float(fl.split('_')[-1].split('.')[0])
+                    if tmp_best < best_mse:
+                        os.remove(f'{log_path}/{fl}')
+                        torch.save(model.state_dict(), f'best_mse_{best_mse}.pth')
+                    else:
+                        break 
         
         if mae < best_mae:  # NOTE here seperate MSE and MAE
             best_mae = mae
+            ls_file = os.listdir(log_path)
+            for fl in ls_file:
+                if fl.endswith('.pth') and 'best_mae' in fl:
+                    tmp_best = float(fl.split('_')[-1].split('.')[0])
+                    if tmp_best < best_mae:
+                        os.remove(f'{log_path}/{fl}')
+                        torch.save(model.state_dict(), f'best_mae_{best_mae}.pth')
+                    else:
+                        break
             
         log_message(f'Time: {time.time() - time_start:.2f} Epoch: {epoch+1}, Loss: {train_loss:.4f}, Test MSE: {mse:.4f}, Best MSE: {best_mse:.4f}, Test MAE: {mae: .4f}, Best MAE: {best_mae:.4f}', log_file)
         
