@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import torch
-from model import GCN, EnhancedGCN
+from model import GCN, EnhancedGCN, DeeperEnhancedGCN, PureGAT
 from dataset import get_dataset
 from torch_geometric.data import Data
 import argparse
@@ -61,12 +61,12 @@ def main(args):
     log_path = './log'
     if not os.path.exists(log_path):
         os.makedirs(log_path)
-    log_path = f'{log_path}/size_{args.datasize}'
+    log_path = f'{log_path}/{args.model}_size_{args.datasize}'
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     
     current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-    log_file = f'{log_path}/log_{args.datasize}_size_{args.lr}_lr){args.batch_size}_bs_{current_time}.txt'
+    log_file = f'{log_path}/log_{args.model}_{args.datasize}_size_{args.lr}_lr_{args.batch_size}_bs_{current_time}.txt'
     log_message(str(args), log_file)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -82,7 +82,16 @@ def main(args):
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
     # model = GCN(num_node_features=2).to(device)     # NOTE 2
-    model = EnhancedGCN(num_node_features=2).to(device)
+    if args.model == 'GCN':
+        model = GCN(num_node_features=2).to(device)
+    elif args.model == 'EnhancedGCN':
+        model = EnhancedGCN(num_node_features=2).to(device)
+    elif args.model == 'DeeperEnhancedGCN':
+        model = DeeperEnhancedGCN(num_node_features=2).to(device)
+    elif args.model == 'PureGAT':
+        model = PureGAT(num_node_features=2).to(device)
+    else:
+        raise NotImplementedError
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = torch.nn.MSELoss() 
 
@@ -92,29 +101,38 @@ def main(args):
         time_start = time.time()
         train_loss = train(model, device, train_loader, optimizer, criterion)
         mse, mae = test(model, device, test_loader, criterion=criterion)
+        
         if mse < best_mse:
             best_mse = mse
             ls_file = os.listdir(log_path)
+            flag = False 
             for fl in ls_file:
                 if fl.endswith('.pth') and 'best_mse' in fl:
-                    tmp_best = float(fl.split('_')[-1].split('.')[0])
-                    if tmp_best < best_mse:
+                    flag = True
+                    tmp_best = fl.replace('.pth', '').split('_')[-1]
+                    # tmp_best = float(fl.split('_')[-1].split('.')[0])
+                    if best_mse < int(tmp_best):
                         os.remove(f'{log_path}/{fl}')
-                        torch.save(model.state_dict(), f'best_mse_{best_mse}.pth')
-                    else:
-                        break 
+                        torch.save(model.state_dict(), f'{log_path}/best_mse_{best_mse:.5f}.pth')
+                    break
+            if not flag:
+                torch.save(model.state_dict(), f'{log_path}/best_mse_{best_mse:.5f}.pth')
         
         if mae < best_mae:  # NOTE here seperate MSE and MAE
             best_mae = mae
             ls_file = os.listdir(log_path)
             for fl in ls_file:
+                flag = False
                 if fl.endswith('.pth') and 'best_mae' in fl:
-                    tmp_best = float(fl.split('_')[-1].split('.')[0])
-                    if tmp_best < best_mae:
+                    flag = True
+                    tmp_best = int(fl.replace('.pth', '').split('_')[-1])
+                    # tmp_best = float(fl.split('_')[-1].split('.')[0])
+                    if best_mae < int(tmp_best):
                         os.remove(f'{log_path}/{fl}')
-                        torch.save(model.state_dict(), f'best_mae_{best_mae}.pth')
-                    else:
-                        break
+                        torch.save(model.state_dict(), f'{log_path}/best_mae_{best_mae:.5f}.pth')
+                    break
+                if not flag:
+                    torch.save(model.state_dict(), f'{log_path}/best_mae_{best_mae:.5f}.pth')
             
         log_message(f'Time: {time.time() - time_start:.2f} Epoch: {epoch+1}, Loss: {train_loss:.4f}, Test MSE: {mse:.4f}, Best MSE: {best_mse:.4f}, Test MAE: {mae: .4f}, Best MAE: {best_mae:.4f}', log_file)
         
@@ -127,6 +145,7 @@ def args_parser():
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--datasize', type=str, default='100')    # 使用的数据集大小
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
+    parser.add_argument('--model', default='EnhancedGCN', help='The model to use')
     args = parser.parse_args()
     return args 
 

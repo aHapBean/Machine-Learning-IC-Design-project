@@ -5,18 +5,44 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 class GCN(torch.nn.Module):
     def __init__(self, num_node_features):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(num_node_features, 16)
-        self.conv2 = GCNConv(16, 16)
-        self.fc = torch.nn.Linear(16, 1)  # 输出一个值
+        self.conv1 = GCNConv(num_node_features, 32)
+        self.conv2 = GCNConv(32, 64)
+        self.fc1 = torch.nn.Linear(64 + 32, 128)
+        self.fc2 = torch.nn.Linear(128, 1)
+        self.jump = JumpingKnowledge("cat")  # cat 操作
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch  
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = self.conv2(x, edge_index)
-        x = F.relu(x)
-        x = global_mean_pool(x, batch) 
-        x = self.fc(x).flatten()
+        x1 = F.relu(self.conv1(x, edge_index))
+        x2 = F.relu(self.conv2(x1, edge_index))
+        # print(f'x1 shape {x1.shape}, x2 shape {x2.shape}')  # 344733, 32
+        x_jump = self.jump([x1, x2])  # 跳跃连接
+        
+        x_pool = global_mean_pool(x_jump, batch)
+        # print(f'x_pool shape {x_pool.shape}')   # bs, 96
+        x = F.relu(self.fc1(x_pool))
+        x = self.fc2(x).flatten()
+        return x
+
+class PureGAT(torch.nn.Module):
+    def __init__(self, num_node_features):
+        super(PureGAT, self).__init__()
+        self.conv1 = GATConv(num_node_features, 16, heads=4)
+        self.conv2 = GATConv(16 * 4, 32, heads=8)
+        # self.conv3 = GATConv(32 * 4, 64, heads=4)
+        self.jump = JumpingKnowledge("cat")  # cat 操作
+        self.fc1 = torch.nn.Linear(16 * 4 + 32 * 8, 128)  # 跳跃连接后的维度变化
+        self.fc2 = torch.nn.Linear(128, 1)  # 输出一个值
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x1 = F.relu(self.conv1(x, edge_index))
+        x2 = F.relu(self.conv2(x1, edge_index))
+        # x3 = F.relu(self.conv3(x2, edge_index))
+        x_jump = self.jump([x1, x2])  # 跳跃连接
+        x_pool = global_mean_pool(x_jump, batch)
+        x = F.relu(self.fc1(x_pool))
+        x = self.fc2(x).flatten()
         return x
 
 # NOTE 可以用两种模型对比性能
@@ -65,13 +91,14 @@ class EnhancedGCN(torch.nn.Module):
         super(EnhancedGCN, self).__init__()
         self.conv1 = GCNConv(num_node_features, 16)
         self.conv2 = GATConv(16, 16, heads=8)  # 使用注意力机制
-        self.jump = JumpingKnowledge("cat")
+        self.jump = JumpingKnowledge("cat") # cat 操作
         self.fc1 = torch.nn.Linear(16 + 8 * 16, 16)  # 跳跃连接后的维度变化
         self.fc2 = torch.nn.Linear(16, 1)  # 输出一个值
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
         # print(x.shape, ' x')
+        # print(x.shape)  1000-50000 个点
         x1 = F.relu(self.conv1(x, edge_index))
         # print(x1.shape, ' x1')  # N, 16
         x2 = F.relu(self.conv2(x1, edge_index))
@@ -82,6 +109,32 @@ class EnhancedGCN(torch.nn.Module):
         x = F.relu(self.fc1(x_pool))
         x = self.fc2(x).flatten()
         return x
+    
+class DeeperEnhancedGCN(torch.nn.Module):
+    def __init__(self, num_node_features):
+        super(DeeperEnhancedGCN, self).__init__()
+        self.conv1 = GCNConv(num_node_features, 16)
+        self.conv2 = GCNConv(16, 32)
+        self.conv3 = GATConv(32, 32, heads=4)  # 使用注意力机制
+        self.conv4 = GATConv(32 * 4, 32, heads=8)  # 再次使用注意力机制
+        self.jump = JumpingKnowledge("cat")  # cat 操作
+        self.fc1 = torch.nn.Linear(16 + 32 + 32 * 4 + 32 * 8, 128)  # 跳跃连接后的维度变化
+        self.fc2 = torch.nn.Linear(128, 1)  # 输出一个值
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x1 = F.relu(self.conv1(x, edge_index))
+        x2 = F.relu(self.conv2(x1, edge_index))
+        x3 = F.relu(self.conv3(x2, edge_index))
+        x4 = F.relu(self.conv4(x3, edge_index))
+        x_jump = self.jump([x1, x2, x3, x4])  # 跳跃连接 hierachical structure ?
+        x_pool = global_mean_pool(x_jump, batch)
+        x = F.relu(self.fc1(x_pool))
+        x = self.fc2(x).flatten()
+        # print(x.shape)  # (batch, )
+        return x
+
+
 
 """
 https://www.cnblogs.com/picassooo/p/15437658.html
