@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import torch
-from model import GCN, EnhancedGCN, DeeperEnhancedGCN, PureGAT
+from model import GCN, EnhancedGCN, DeeperEnhancedGCN, PureGAT, GIN
 from dataset import get_dataset
 from torch_geometric.data import Data
 import argparse
@@ -90,6 +90,8 @@ def main(args):
         model = DeeperEnhancedGCN(num_node_features=2).to(device)
     elif args.model == 'PureGAT':
         model = PureGAT(num_node_features=2).to(device)
+    elif args.model == 'GIN':
+        model = GIN(num_node_features=2).to(device)
     else:
         raise NotImplementedError
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
