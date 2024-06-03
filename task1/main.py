@@ -71,7 +71,7 @@ def main(args):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Load dataset...')
-    dataset = get_dataset(args.data, args.datasize)
+    dataset = get_dataset(args.data, args.datasize, task=args.task)
     
     print('Load over !')
     train_size = int(0.8 * len(dataset))
@@ -113,7 +113,7 @@ def main(args):
                     flag = True
                     tmp_best = fl.replace('.pth', '').split('_')[-1]
                     # tmp_best = float(fl.split('_')[-1].split('.')[0])
-                    if best_mse < int(tmp_best):
+                    if best_mse < float(tmp_best):
                         os.remove(f'{log_path}/{fl}')
                         torch.save(model.state_dict(), f'{log_path}/best_mse_{best_mse:.5f}.pth')
                     break
@@ -127,9 +127,9 @@ def main(args):
                 flag = False
                 if fl.endswith('.pth') and 'best_mae' in fl:
                     flag = True
-                    tmp_best = int(fl.replace('.pth', '').split('_')[-1])
+                    tmp_best = fl.replace('.pth', '').split('_')[-1]
                     # tmp_best = float(fl.split('_')[-1].split('.')[0])
-                    if best_mae < int(tmp_best):
+                    if best_mae < float(tmp_best):
                         os.remove(f'{log_path}/{fl}')
                         torch.save(model.state_dict(), f'{log_path}/best_mae_{best_mae:.5f}.pth')
                     break
@@ -141,6 +141,7 @@ def main(args):
 
 def args_parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--task', type=int, default=1, help='The task number')
     parser.add_argument('--data', type=str, default='../project/project_data', help='The path of data in task 1')
     # parser.add_argument('--num-node-features', type=int, default=1)
     parser.add_argument('--max_epoch', type=int, default=200)

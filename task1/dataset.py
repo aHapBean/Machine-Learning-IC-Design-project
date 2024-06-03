@@ -3,6 +3,7 @@ import os
 from tqdm import tqdm
 import torch
 from torch_geometric.data import InMemoryDataset, Data
+from torch_geometric.transforms import BaseTransform
 import abc_py
 import numpy as np
 import random
@@ -34,16 +35,36 @@ import random
 #     def __len__(self):
 #         return len(self.labels)
 
+class NormalizeY(BaseTransform):
+    def __init__(self, mean=None, std=None):
+        self.set_param(mean, std)
+    def set_param(self, mean, std):
+        self.mean = mean
+        self.std = std
+    def __call__(self, data):
+        data.mean = self.mean
+        data.std = self.std
+        data.y = (data.y - self.mean) / self.std
+        return data
+
 class PYGDataset(InMemoryDataset):
-    def __init__(self, path, size, transform=None, pre_transform=None):
+    def __init__(self, path, size, transform=None, pre_transform=None, pre_transform_custom=None):
         self.root = os.path.join(path, '..', 'pyg')
         self.path = path
         self.size = size
+
         super(PYGDataset, self).__init__(self.root, transform, pre_transform)
         if not os.path.exists(self.processed_paths[0]):
             self.process()
-        self.data, self.slices = torch.load(self.processed_paths[0])
-        self.size 
+
+        # task2 normalize
+        self.norm_path = os.path.join(self.root, 'processed', f'data_{self.size}_norm.pt')
+        if pre_transform_custom is not None:
+            if not os.path.exists(self.norm_path):
+                self.apply_pre_transform(pre_transform_custom)
+            self.data, self.slices = torch.load(self.norm_path)
+        else:
+            self.data, self.slices = torch.load(self.processed_paths[0])
         
     @property
     def raw_file_names(self):
@@ -183,12 +204,25 @@ class PYGDataset(InMemoryDataset):
 
         graph_data = Data(x=node_features, edge_index=edge_index, y=torch.tensor([lbl]))        # to [1,]
         return graph_data
+
+    def apply_pre_transform(self, pre_transform):
+        print("Apply pre_transform...")
+        data, slices = torch.load(self.processed_paths[0])
+        mean = data.y.mean().item()
+        std = data.y.std().item()
+        pre_transform.set_param(mean, std)
+        data = pre_transform(data)
+        torch.save((data, slices), self.norm_path)
     
     def __len__(self):
         return len(self.data.y)
 
-def get_dataset(path, size):
-    return PYGDataset(path, size)
+def get_dataset(path, size, task=1):
+    if task == 2:
+        pre_transform = NormalizeY()
+    else:
+        pre_transform = None
+    return PYGDataset(path, size, pre_transform_custom=pre_transform)
 
 if __name__ == '__main__':
     get_dataset('../project/project_data')
