@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, JumpingKnowledge
 
 class GCN(torch.nn.Module):
     def __init__(self, num_node_features):
@@ -134,6 +134,46 @@ class DeeperEnhancedGCN(torch.nn.Module):
         # print(x.shape)  # (batch, )
         return x
 
+class GIN(torch.nn.Module):
+    def __init__(self, num_node_features, dims=[16,32,64]):
+        super(GIN, self).__init__()
+        nn1 = torch.nn.Sequential(
+            torch.nn.Linear(num_node_features, dims[0]),
+            torch.nn.ReLU(),
+            torch.nn.Linear(dims[0], dims[0]),
+            torch.nn.BatchNorm1d(dims[0], track_running_stats=False))
+
+        nn2 = torch.nn.Sequential(
+            torch.nn.Linear(dims[0], dims[1]),
+            torch.nn.ReLU(),
+            torch.nn.Linear(dims[1], dims[1]),
+            torch.nn.BatchNorm1d(dims[1], track_running_stats=False))
+
+        nn3 = torch.nn.Sequential(
+            torch.nn.Linear(dims[1], dims[2]),
+            torch.nn.ReLU(),
+            torch.nn.Linear(dims[2], dims[2]),
+            torch.nn.BatchNorm1d(dims[2], track_running_stats=False))
+
+        self.conv1 = GINConv(nn1, train_eps=True)
+        self.conv2 = GINConv(nn2, train_eps=True)
+        self.conv3 = GINConv(nn3, train_eps=True)
+        self.jump = JumpingKnowledge("cat")
+        self.fc1 = torch.nn.Linear(sum(dims), 64)
+        self.fc2 = torch.nn.Linear(64, 16)
+        self.fc3 = torch.nn.Linear(16, 1)
+    
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x1 = F.relu(self.conv1(x, edge_index))
+        x2 = F.relu(self.conv2(x1, edge_index))
+        x3 = F.relu(self.conv3(x2, edge_index))
+        x_jump = self.jump([x1, x2, x3]) 
+        x_pool = global_mean_pool(x_jump, batch)
+        x = F.relu(self.fc1(x_pool))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x)).flatten()
+        return x
 
 
 """
