@@ -141,13 +141,15 @@ class GIN(torch.nn.Module):
             torch.nn.Linear(num_node_features, dims[0]),
             torch.nn.ReLU(),
             torch.nn.Linear(dims[0], dims[0]),
-            torch.nn.BatchNorm1d(dims[0], track_running_stats=False))
+            # torch.nn.BatchNorm1d(dims[0], track_running_stats=False)
+        )
 
         nn2 = torch.nn.Sequential(
             torch.nn.Linear(dims[0], dims[1]),
             torch.nn.ReLU(),
             torch.nn.Linear(dims[1], dims[1]),
-            torch.nn.BatchNorm1d(dims[1], track_running_stats=False))
+            # torch.nn.BatchNorm1d(dims[1], track_running_stats=False)
+        )
 
         self.conv1 = GINConv(nn1, train_eps=True)
         self.conv2 = GINConv(nn2, train_eps=True)
