@@ -18,11 +18,7 @@ def train(model, device, dataloader, optimizer, criterion):
     for data in tqdm(dataloader, desc='Training dataset', leave=False):
         data = data.to(device)
         optimizer.zero_grad()
-        # print(lbl)
-    
         output = model(data)
-        # print(graph_data.y.shape, ' ', output.shape)
-        # print(graph_data.y)
         loss = criterion(output, data.y)
         loss.backward()
         optimizer.step()
@@ -76,6 +72,9 @@ def main(args):
     print('Load over !')
     train_size = int(0.8 * len(dataset))
     test_size = len(dataset) - train_size
+    
+    # NOTE 伪随机
+    torch.manual_seed(42)
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
     print(f'Train length {len(train_dataset)}, Test length {len(test_dataset)}')
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)

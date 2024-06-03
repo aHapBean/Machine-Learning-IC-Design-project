@@ -8,4 +8,4 @@ Model:
 > - GCN + GAT (EnhancedGCN)
 > - Deeper GCN + GAT (DeeperEnhancedGCN)
 
-*the `concat` operation is adopted by default in the model.
+*The `concat` operation is adopted by default in the model.
