@@ -1,4 +1,4 @@
-# Machine Project IC design
+# Machine Learning IC design
 
 ## task 1
 

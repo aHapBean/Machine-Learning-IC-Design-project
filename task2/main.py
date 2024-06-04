@@ -25,14 +25,12 @@ def train(model, device, dataloader, optimizer, criterion):
         total_loss += loss.item()
     return total_loss / len(dataloader)
 
-def test(model, device, dataloader, criterion, test=False):
+def test(model, device, dataloader, criterion):
     model.eval()
     total_mse = 0
     total_mae = 0
     
     cnt = 0
-    if os.path.exists('./test_results_task1.txt'):
-        os.remove('./test_results_task1.txt')
     with torch.no_grad():
         for data in dataloader:
             data = data.to(device)
@@ -42,9 +40,7 @@ def test(model, device, dataloader, criterion, test=False):
             total_mse += mse
             total_mae += mae
             cnt += 1
-            if cnt < 6 or (test and cnt < 1000):
-                with open('test_results_task1.txt', 'a') as f:
-                    f.write(f'pred: {output.item()}, label: {data.y.item()}' + '\n')
+            if cnt < 6:
                 print(f'pred: {output.item()}, label: {data.y.item()}')
     avg_mse = total_mse / len(dataloader)
     avg_mae = total_mae / len(dataloader)
@@ -58,7 +54,7 @@ def log_message(message, log_file):
 import datetime 
 def main(args):
     # log file
-    log_path = './log'
+    log_path = './log_task2'
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     log_path = f'{log_path}/{args.model}_size_{args.datasize}'
@@ -71,7 +67,7 @@ def main(args):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Load dataset...')
-    dataset = get_dataset(args.data, args.datasize, task=args.task)
+    dataset = get_dataset(args.data, args.datasize)
     
     print('Load over !')
     train_size = int(0.8 * len(dataset))
@@ -140,7 +136,7 @@ def main(args):
                 torch.save(model.state_dict(), f'{log_path}/best_mae_{best_mae:.5f}.pth')
             
         log_message(f'Time: {time.time() - time_start:.2f} Epoch: {epoch+1}, Loss: {train_loss:.4f}, Test MSE: {mse:.4f}, Best MSE: {best_mse:.4f}, Test MAE: {mae: .4f}, Best MAE: {best_mae:.4f}', log_file)
-
+        
 
 def test_main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -157,7 +153,7 @@ def test_main(args):
     print(f'Train length {len(train_dataset)}, Test length {len(test_dataset)}')
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     
-    log_path = './log'
+    log_path = './log_task2'
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     log_path = f'{log_path}/{args.model}_size_{args.datasize}'
@@ -191,10 +187,10 @@ def test_main(args):
         mse, mae = test(model, device, test_loader, criterion=criterion, test=args.test)
         print(f'Time: {time.time() - time_start:.2f} [Test MSE]: {mse:.4f}, [Test MAE]: {mae: .4f}')
 
+
 def args_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', type=int, default=1, help='The task number')
-    parser.add_argument('--data', type=str, default='../project/project_data', help='The path of data in task 1')
+    parser.add_argument('--data', type=str, default='../project/project_data2', help='The path of data in task 2')
     # parser.add_argument('--num-node-features', type=int, default=1)
     parser.add_argument('--max_epoch', type=int, default=200)
     parser.add_argument('--batch-size', type=int, default=1)
@@ -213,5 +209,3 @@ if __name__ == '__main__':
         test_main(args)
     else:
         main(args)
-
-# test result: 0.0021 0.0279

@@ -85,7 +85,7 @@ from torch_geometric.nn import GCNConv, GATConv, global_mean_pool, JumpingKnowle
 #         x = self.fc2(x).flatten()
 #         return x
 
-
+# GCN + GAT hybrid
 class EnhancedGCN(torch.nn.Module):
     def __init__(self, num_node_features):
         super(EnhancedGCN, self).__init__()
@@ -109,7 +109,9 @@ class EnhancedGCN(torch.nn.Module):
         x = F.relu(self.fc1(x_pool))
         x = self.fc2(x).flatten()
         return x
-    
+
+
+# Deeper GCN + GAT
 class DeeperEnhancedGCN(torch.nn.Module):
     def __init__(self, num_node_features):
         super(DeeperEnhancedGCN, self).__init__()
@@ -133,6 +135,7 @@ class DeeperEnhancedGCN(torch.nn.Module):
         x = self.fc2(x).flatten()
         # print(x.shape)  # (batch, )
         return x
+
 
 class GIN(torch.nn.Module):
     def __init__(self, num_node_features, dims=[16,32]):
