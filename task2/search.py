@@ -125,9 +125,10 @@ class Search(object):
                 cur_state = cur.split('.')[0]
                 cur_len = len(cur_state.split('_')[-1])
 
-                if cur_len == self.n_steps and predicted > max_value:
-                    max_value = predicted
-                    max_AIG = cur
+                if cur_len == self.n_steps: 
+                    if predicted > max_value:
+                        max_value = predicted
+                        max_AIG = cur
                     continue
 
                 childs = []
