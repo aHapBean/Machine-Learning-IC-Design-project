@@ -6,6 +6,7 @@ import torch
 import abc_py
 from torch_geometric.data import Data
 from model import GCN
+from search import Search
 
 synthesisOpToPosDic = {
     0: "refactor",
@@ -92,7 +93,10 @@ def clear_tmp_files():
 
 def predict_reward(AIG):
     """AIG: such as alu2_32.aig"""
-    return np.random.rand()
+    if type(AIG) == str:
+        return np.random.rand()
+    else:
+        return np.random.rand(len(AIG))
 
 def main():
 
@@ -102,19 +106,9 @@ def main():
     libFile = LIBFILE
     logFile = 'tmp.log'
 
-    for step in range(10):
-        childs = []
-        cur_state = AIG.split('.')[0]
-        cur_state = cur_state + '_' if '_' not in cur_state else cur_state  # in the beginning
-
-        childScores = []
-        for child in range(7):
-            childFile = cur_state + str(child) + '.aig'
-            predicted = predict_reward(childFile)       # 要用模型来预测 reward
-            childScores.append(predicted)
-            childs.append(childFile)
-        action = np.argmin(childScores)     # FIXME: argmax or argmin ? 
-        AIG = childs[action]
+    # search
+    search_process = Search(predict_fn=predict_reward, n_steps=10, n_branch=7)
+    AIG = search_process(AIG, method='BestFirstSearch')
 
     print(AIG)
 
