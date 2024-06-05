@@ -91,7 +91,7 @@ def clear_tmp_files():
     os.system("rm -rf ../task2/*.aig")
     os.system("rm -rf ../project/test_aig_files/*.aig")
 
-def main():
+def search(AIG='alu4.aig', method='greedy', maxsize=200):
 
     clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
 
@@ -101,7 +101,7 @@ def main():
 
     # search
     search_process = Search(n_steps=10, n_branch=7)
-    AIG = search_process(AIG, method='greedy')
+    AIG = search_process(AIG, method=method, maxsize=maxsize)
 
     print(AIG)
 
@@ -140,5 +140,5 @@ def main():
     finalVal = (baseline - adpVal) / baseline
     print(finalVal)
 
-main()
+search('alu4.aig', method='BestFirstSearch', maxsize=2)
 

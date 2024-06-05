@@ -149,17 +149,29 @@ class Search(object):
         self.n_steps = n_steps if n_steps is not None else self.n_steps
         self.n_branch = n_branch if n_branch is not None else self.n_branch
 
-    def __call__(self, AIG, method='greedy'):
+    def __call__(self, AIG, method='greedy', maxsize=200):
         if method == 'greedy':
-            return self.greedy(AIG)
+            output_AIG = self.greedy(AIG)
         elif method == 'DFS':
-            return self.DFS(AIG)
+            output_AIG = self.DFS(AIG)
         elif method == 'BFS':
-            return self.BFS(AIG)
+            output_AIG = self.BFS(AIG)
         elif method == 'BestFirstSearch':
-            return self.BestFirstSearch(AIG)
+            output_AIG = self.BestFirstSearch(AIG, maxsize)
         else:
             raise NotImplementedError(f"Method {method} not implemented")
+        
+        actions = output_AIG.split('_')[1].split('.')[0]
+        base = output_AIG.split('_')[0] + '_'
+        max_score = float('-inf')
+        max_AIG = None
+        for action in actions:
+            base += action
+            score = self.predict_fn(base + '.aig')
+            if score > max_score:
+                max_score = score
+                max_AIG = base + '.aig'
+        return max_AIG
 
     def greedy(self, AIG):
         pbar = tqdm(desc='Greedy search', leave=True, ascii=True, unit=' step')
@@ -195,10 +207,10 @@ class Search(object):
                 cur_state = cur.split('.')[0]
                 cur_len = len(cur_state.split('_')[-1])
 
+                if predicted > max_value:
+                    max_value = predicted
+                    max_AIG = cur
                 if cur_len == self.n_steps: 
-                    if predicted > max_value:
-                        max_value = predicted
-                        max_AIG = cur
                     continue
 
                 childs = []
@@ -231,10 +243,10 @@ class Search(object):
                 cur_state = cur.split('.')[0]
                 cur_len = len(cur_state.split('_')[-1])
 
+                if predicted > max_value:
+                    max_value = predicted
+                    max_AIG = cur
                 if cur_len == self.n_steps: 
-                    if predicted > max_value:
-                        max_value = predicted
-                        max_AIG = cur
                     continue
 
                 childs = []
@@ -267,10 +279,10 @@ class Search(object):
                 cur_state = cur.split('.')[0]
                 cur_len = len(cur_state.split('_')[-1])
 
+                if predicted > max_value:
+                    max_value = predicted
+                    max_AIG = cur
                 if cur_len == self.n_steps: 
-                    if predicted > max_value:
-                        max_value = predicted
-                        max_AIG = cur
                     continue
 
                 childs = []
