@@ -6,9 +6,11 @@ abc_py/
 project/
 task1_copy/
 log/
+log_task2/
 
 *.whl
 *.zip
 *.txt
 *.log
 *.pt
+*.pth
