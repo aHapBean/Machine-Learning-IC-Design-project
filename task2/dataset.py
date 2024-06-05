@@ -104,7 +104,7 @@ class PYGDataset(InMemoryDataset):
         base_path = '../project/'
         circuitName, actions = state.split('_')
         circuitPath = os.path.join(base_path, 'InitialAIG/train/' + circuitName + '.aig')   # NOTE only train dir ??应该是, test应该是用来设计aig的
-
+    
         if not os.path.exists(os.path.join(base_path, 'train_aig_files', state + '.aig')):
             libFile = os.path.join(base_path, 'lib/7nm/7nm.lib')
 
