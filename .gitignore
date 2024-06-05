@@ -13,4 +13,4 @@ log_task2/
 *.txt
 *.log
 *.pt
-*.pth
+# *.pth
