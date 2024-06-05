@@ -25,15 +25,12 @@ def train(model, device, dataloader, optimizer, criterion):
         total_loss += loss.item()
     return total_loss / len(dataloader)
 
-
-def test(model, device, dataloader, criterion, test=False):
+def test(model, device, dataloader, criterion):
     model.eval()
     total_mse = 0
     total_mae = 0
     
     cnt = 0
-    if os.path.exists('./test_results_task1.txt'):
-        os.remove('./test_results_task1.txt')
     with torch.no_grad():
         for data in dataloader:
             data = data.to(device)
@@ -43,9 +40,7 @@ def test(model, device, dataloader, criterion, test=False):
             total_mse += mse
             total_mae += mae
             cnt += 1
-            if cnt < 6 or (test and cnt < 1000):
-                with open('test_results_task1.txt', 'a') as f:
-                    f.write(f'pred: {output.item()}, label: {data.y.item()}' + '\n')
+            if cnt < 6:
                 print(f'pred: {output.item()}, label: {data.y.item()}')
     avg_mse = total_mse / len(dataloader)
     avg_mae = total_mae / len(dataloader)
@@ -146,7 +141,7 @@ def main(args):
 def test_main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Load dataset...')
-    dataset = get_dataset(args.data, args.datasize)
+    dataset = get_dataset(args.data, args.datasize, task=args.task)
     
     print('Load over !')
     train_size = int(0.8 * len(dataset))
@@ -191,8 +186,6 @@ def test_main(args):
         time_start = time.time()
         mse, mae = test(model, device, test_loader, criterion=criterion, test=args.test)
         print(f'Time: {time.time() - time_start:.2f} [Test MSE]: {mse:.4f}, [Test MAE]: {mae: .4f}')
-        with open('test_results_task1.txt', 'a') as f:
-            f.write(f'Time: {time.time() - time_start:.2f} [Test MSE]: {mse:.4f}, [Test MAE]: {mae: .4f}' + '\n')
 
 
 def args_parser():
@@ -210,6 +203,7 @@ def args_parser():
 
 if __name__ == '__main__':
     args = args_parser()
+    assert args.task == 1
     if args.test:
         print('Test the model...')
         test_main(args)

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import abc_py
 from torch_geometric.data import Data
-from model import GCN, DeeperEnhancedGCN
+from model import GCN
 from search import Search
 
 synthesisOpToPosDic = {
@@ -91,6 +91,13 @@ def clear_tmp_files():
     os.system("rm -rf ../task2/*.aig")
     os.system("rm -rf ../project/test_aig_files/*.aig")
 
+def predict_reward(AIG):
+    """AIG: such as alu2_32.aig"""
+    if type(AIG) == str:
+        return np.random.rand()
+    else:
+        return np.random.rand(len(AIG))
+
 def main():
 
     clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
@@ -100,8 +107,8 @@ def main():
     logFile = 'tmp.log'
 
     # search
-    search_process = Search(n_steps=10, n_branch=7)
-    AIG = search_process(AIG, method='greedy')
+    search_process = Search(predict_fn=predict_reward, n_steps=10, n_branch=7)
+    AIG = search_process(AIG, method='BestFirstSearch')
 
     print(AIG)
 
@@ -117,8 +124,6 @@ def main():
     }
 
     state = AIG.split('.')[0]
-    print('pred', search_process.predict_fn(AIG))
-    
     circuitName, actions = state.split('_')
     circuitPath = os.path.join(BASEPATH, 'InitialAIG/test/' + circuitName + '.aig') # FIXME: train or test?
     actionCmd = ''
@@ -138,6 +143,7 @@ def main():
 
     baseline = cal_baseline(AIG, circuitPath=circuitPath, libFile=libFile)
     finalVal = (baseline - adpVal) / baseline
+
     print(finalVal)
 
 main()

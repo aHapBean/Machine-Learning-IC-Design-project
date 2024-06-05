@@ -9,16 +9,3 @@ Model:
 > - Deeper GCN + GAT (DeeperEnhancedGCN)
 
 *The `concat` operation is adopted by default in the model.
-
-## task 2
-
-Model: 
-> - GCN (GCN)
-> - GAT (PureGAT)
-> - GCN + GAT (EnhancedGCN)
-> - Deeper GCN + GAT (DeeperEnhancedGCN)
-
-*The `concat` operation is adopted by default in the model.
-
-Search algorithm:
-> TODO
