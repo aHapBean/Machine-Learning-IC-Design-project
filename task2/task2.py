@@ -144,11 +144,15 @@ def search(AIG='alu4.aig', method='greedy', maxsize=200, predict_fn=None):
     AIG = search_process(AIG, method=method, maxsize=maxsize)
 
     print(AIG)
-    print('pred', search_process.predict_fn(AIG))
+    print('pred: ', search_process.predict_fn(AIG))
 
     finalVal = cur_abc(AIG)
     print('final', finalVal)
 
-search('alu4.aig', method='BestFirstSearch', maxsize=24, predict_fn=predict_abc)
+ls_files = os.listdir('../project/InitialAIG/test')
+for ls_fl in ls_files:
+    print(ls_fl)
+    search(ls_fl, method='BestFirstSearch', maxsize=24, predict_fn=None)    # NOTE
+
 clear_tmp_files()
 
