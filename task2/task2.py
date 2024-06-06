@@ -91,12 +91,7 @@ def get_pkl_data():
 #evaluate_AIG('alu2.aig', train=True)
 
 def predict_abc(AIG):
-    # return 0
     return p_abc(AIG)
-    # if type(AIG) == str:
-    #     return p_abc(AIG)
-    # else:
-    #     return [p_abc(aig) for aig in AIG]
 
 def predict_gnn(AIG):
     """
@@ -143,9 +138,10 @@ def p_abc(AIG):
     return finalVal
 
 def clear_tmp_files():
+    raise ValueError('ERROR here!') # 某些文件不能删 NOTE 
     os.system("rm -rf ../task2/*.log")
     os.system("rm -rf ../task2/*.aig")
-    os.system("rm -rf ../project/test_aig_files/*.aig")
+    os.system("rm -rf ../project/test_aig_files/*.aig") 
     os.system("rm -rf aigFile/*.aig")
     os.system("rm -rf libFile/*.log")
 
@@ -154,7 +150,7 @@ from datetime import datetime
 def search(AIG, search_process, method='greedy', maxsize=200, log_path=None):
     os.makedirs('libFile', exist_ok=True)
     os.makedirs('aigFile', exist_ok=True)
-    clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
+    # clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
     
     if not '_' in AIG:
         AIG = AIG.split('.')[0] + '_' + '.aig'
@@ -193,7 +189,7 @@ def log_message(message, log_file=None):
 def test(AIG='alu4.aig', method='greedy', maxsize=200, predict_fn=None):
     os.makedirs('libFile', exist_ok=True)
     os.makedirs('aigFile', exist_ok=True)
-    clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
+    # clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
 
     AIG = AIG
     if not '_' in AIG:
@@ -318,7 +314,7 @@ if __name__ == '__main__':
         search(ls_fl, search_process, method=args.method, maxsize=args.maxsize, log_path=log_path)
         log_message(f'Time cost: {time.time() - time_start:.2f} s', log_path)
         
-    clear_tmp_files()
+    # clear_tmp_files()
     
 # CUDA_VISIBLE_DEVICES=0 python task2.py   
 # 2-5 s 一个 step -> 
