@@ -313,10 +313,8 @@ if __name__ == '__main__':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc)
     elif args.predict == 'gnn_now_gnn_future':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_gnn)
-        raise NotImplementedError
     elif args.predict == 'abc_now_gnn_future':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc_gnn)
-        # raise NotImplementedError
     else:
         raise NotImplementedError
     

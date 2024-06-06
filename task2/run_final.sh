@@ -20,4 +20,17 @@ gnn_now_gnn_future
 DFS (depth=5) BFS (depth=5) Greedy BestFS ?
 
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict abc_now
-CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict abc_now
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method BFS --predict abc_now
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --method greedy --predict abc_now
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict abc_now
+# 可以尝试 25 50 100 等等
+
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict abc_now_gnn_future
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method BFS --predict abc_now_gnn_future
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --method greedy --predict abc_now_gnn_future
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict abc_now_gnn_future
+
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict gnn_now_gnn_future
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method BFS --predict gnn_now_gnn_future
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --method greedy --predict gnn_now_gnn_future
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict gnn_now_gnn_future
