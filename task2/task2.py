@@ -307,7 +307,7 @@ if __name__ == '__main__':
     log_message(f'args: {args}', log_path)
     ls_files = os.listdir('../project/InitialAIG/test')
     if args.method == 'BestFirstSearch':
-        assert args.maxsize <= 24, 'BestFirstSearch only support maxsize <= 24' # ??? NOTE
+        assert args.maxsize <= 200, 'BestFirstSearch only support maxsize <= 200' # ??? NOTE
     
     if args.predict == 'abc_now':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc)
