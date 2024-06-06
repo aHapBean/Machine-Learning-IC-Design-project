@@ -8,6 +8,8 @@ from torch_geometric.data import Data
 from model import GCN, DeeperEnhancedGCN
 from search import Search
 
+from predict import Predict
+
 synthesisOpToPosDic = {
     0: "refactor",
     1: "refactor -z",
@@ -88,11 +90,16 @@ def get_pkl_data():
 
 def predict_abc(AIG):
     if type(AIG) == str:
-        return p_abc(AIG)
+        return total_abc(AIG)
     else:
-        return [p_abc(aig) for aig in AIG]
+        return [total_abc(aig) for aig in AIG]
+    
+def total_abc(AIG):
+    curVal = cur_abc(AIG)
+    reward = Predict(now=False, future=True)(AIG)
+    return curVal + reward
 
-def p_abc(AIG):
+def cur_abc(AIG):
     state = AIG.split('.')[0]
     libFile = LIBFILE
     logFile = 'tmp.log'
@@ -115,8 +122,8 @@ def p_abc(AIG):
         adpVal = float(areaInformation[-9]) * float(areaInformation[-4])
 
     baseline = cal_baseline(AIG, circuitPath=circuitPath, libFile=libFile)
-    finalVal = (baseline - adpVal) / baseline
-    return finalVal
+    curVal = (baseline - adpVal) / baseline
+    return curVal
 
 def clear_tmp_files():
     os.system("rm -rf ../task2/*.log")
@@ -139,7 +146,7 @@ def search(AIG='alu4.aig', method='greedy', maxsize=200, predict_fn=None):
     print(AIG)
     print('pred', search_process.predict_fn(AIG))
 
-    finalVal = predict_abc(AIG)
+    finalVal = cur_abc(AIG)
     print('final', finalVal)
 
 search('alu4.aig', method='BestFirstSearch', maxsize=24, predict_fn=predict_abc)
