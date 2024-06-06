@@ -191,7 +191,7 @@ def search(AIG, search_process, method='greedy', maxsize=200, log_path=None):
             bestVal = finalVal
             final_pred = tmp_pred
             final_AIG_name = tmp_AIG
-    log_message(f'Name: {final_AIG_name} Initial AIG: {predict_abc(Initial_AIG)} final pred AIG: {final_pred} final gt AIG: {bestVal}', log_path)
+    log_message(f'Name: {final_AIG_name} Initial AIG: {predict_abc(Initial_AIG):.8f} final pred AIG: {final_pred:.8f} final gt AIG: {bestVal:.8f}', log_path)
 
 import random
 
@@ -308,7 +308,6 @@ if __name__ == '__main__':
     ls_files = os.listdir('../project/InitialAIG/test')
     if args.method == 'BestFirstSearch':
         assert args.maxsize <= 24, 'BestFirstSearch only support maxsize <= 24' # ??? NOTE
-
     
     if args.predict == 'abc_now':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc)
@@ -321,6 +320,7 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError
     
+    time_all = 0
     for ls_fl in ls_files:
         time_start = time.time()
         if 'mem_ctrl' in ls_fl:
@@ -328,6 +328,8 @@ if __name__ == '__main__':
         
         search(ls_fl, search_process, method=args.method, maxsize=args.maxsize, log_path=log_path)
         log_message(f'Time cost: {time.time() - time_start:.2f} s', log_path)
+        time_all += time.time() - time_start
+    log_message(f'Total time cost: {time_all:.2f} s', log_path)
         
     # clear_tmp_files()
     

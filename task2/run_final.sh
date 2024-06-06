@@ -18,3 +18,6 @@ DFS (depth=4) BFS (depth=4) Greedy BestFS
 
 gnn_now_gnn_future
 DFS (depth=5) BFS (depth=5) Greedy BestFS ?
+
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict abc_now
+CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict abc_now
