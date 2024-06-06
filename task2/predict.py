@@ -58,6 +58,7 @@ class Predict(object):
             if not os.path.exists(os.path.join(base_path, 'test_aig_files/')):
                 os.makedirs(os.path.join(base_path, 'test_aig_files/'))
             os.system(f"mv {AIG}.aig {os.path.join(base_path, 'test_aig_files/')}")
+            os.system(f'rm {logFile}')
             # raise ValueError
         else:
             pass
@@ -142,5 +143,4 @@ class Predict(object):
                 future_aig_score = self.model_predict_future(graph_data).item()
             else:
                 future_aig_score = 0.0
-        os.system(f'rm {logFile}')
         return cur_aig_score + future_aig_score
