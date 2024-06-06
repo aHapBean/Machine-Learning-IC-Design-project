@@ -97,6 +97,9 @@ def get_pkl_data():
 #evaluate_AIG('alu2.aig', train=True)
 
 def predict_abc(AIG):
+    """
+    only ABC
+    """
     return p_abc(AIG)
 
 def predict_gnn(AIG):
@@ -166,7 +169,7 @@ def search(AIG, search_process, method='greedy', maxsize=200, log_path=None):
     
     if not '_' in AIG:
         AIG = AIG.split('.')[0] + '_' + '.aig'
-
+    Initial_AIG = AIG
     AIG = search_process(AIG, method=method, maxsize=maxsize)
 
     actions = AIG.split('.')[0].split('_')[1]
@@ -188,7 +191,7 @@ def search(AIG, search_process, method='greedy', maxsize=200, log_path=None):
             bestVal = finalVal
             final_pred = tmp_pred
             final_AIG_name = tmp_AIG
-    log_message(f'Name: {final_AIG_name} final pred AIG: {final_pred} final gt AIG: {bestVal}', log_path)
+    log_message(f'Name: {final_AIG_name} Initial AIG {predict_abc(Initial_AIG)} final pred AIG: {final_pred} final gt AIG: {bestVal}', log_path)
 
 import random
 
