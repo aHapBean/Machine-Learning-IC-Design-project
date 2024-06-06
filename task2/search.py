@@ -13,7 +13,7 @@ class Search(object):
     def __init__(self, n_steps=10, n_branch=7, predict_fn=None):
         self.set_param(n_steps, n_branch, predict_fn)
 
-    def predict(self, AIG):
+    def predict(self, AIG, future=True):
         model_predict_now = DeeperEnhancedGCN(num_node_features=2).cuda()
         model_predict_future = DeeperEnhancedGCN(num_node_features=2).cuda()
         model_predict_now.load_state_dict(torch.load('./model_final/now.pth'))
@@ -25,7 +25,8 @@ class Search(object):
             AIG = AIG.split('.')[0] + '_'
         if '.aig' in AIG:
             AIG = AIG.replace('.aig', '')
-            
+        
+        # print(AIG.split('_'), ' ', 'here ', AIG)
         circuitName, actions = AIG.split('_')
         circuitPath = os.path.join(base_path, 'InitialAIG/test/' + circuitName + '.aig')   # NOTE only train dir ??应该是, test应该是用来设计aig的
 
@@ -141,13 +142,15 @@ class Search(object):
             future_aig_score = model_predict_future(graph_data).item()
         # print(cur_aig_score, future_aig_score, ' score')
         # raise ValueError
+        if not future:
+            return cur_aig_score
         return cur_aig_score + future_aig_score
         
     
-    def set_param(self, n_steps=None, n_branch=None, predict_fn=None):
+    def set_param(self, n_steps=10, n_branch=7, predict_fn=None):
         # self.predict_fn = predict_fn if predict_fn is not None else self.predict_fn
-        self.n_steps = n_steps if n_steps is not None else self.n_steps
-        self.n_branch = n_branch if n_branch is not None else self.n_branch
+        self.n_steps = n_steps
+        self.n_branch = n_branch
         self.predict_fn = predict_fn if predict_fn is not None else self.predict
 
     def __call__(self, AIG, method='greedy', maxsize=200):
@@ -162,22 +165,25 @@ class Search(object):
         else:
             raise NotImplementedError(f"Method {method} not implemented")
         
-        actions = output_AIG.split('_')[1].split('.')[0]
-        base = output_AIG.split('_')[0] + '_'
-        max_score = float('-inf')
-        max_AIG = None
-        for action in actions:
-            base += action
-            score = self.predict_fn(base + '.aig')
-            if score > max_score:
-                max_score = score
-                max_AIG = base + '.aig'
-        return max_AIG
+        return output_AIG
+        # actions = output_AIG.split('_')[1].split('.')[0]
+        # base = output_AIG.split('_')[0] + '_'
+        # max_score = float('-inf')
+        # max_AIG = None
+        # for action in actions:
+        #     base += action
+        #     score = self.predict_fn(base + '.aig')
+        #     if score > max_score:
+        #         max_score = score
+        #         max_AIG = base + '.aig'
+        # return max_AIG
 
     def greedy(self, AIG):
         pbar = tqdm(desc='Greedy search', leave=True, ascii=True, unit=' step')
-
-        AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
+        
+        if not '_' in AIG:
+            AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
+            
         for step in range(self.n_steps):
             childs = []
             cur_state = AIG.split('.')[0]
@@ -195,8 +201,9 @@ class Search(object):
     
     def DFS(self, AIG):
         pbar = tqdm(desc='DFS search', leave=True, ascii=True, unit=' step')
-
-        AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
+        if not '_' in AIG:
+            AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
+        
         dq = deque()
         dq.append((AIG, self.predict_fn(AIG)))
         max_value = float('-inf')
@@ -204,7 +211,7 @@ class Search(object):
         
         try:
             while dq:
-                cur, predicted = dq.pop()
+                cur, predicted = dq.pop()   # 尾部删除
                 cur_state = cur.split('.')[0]
                 cur_len = len(cur_state.split('_')[-1])
 
@@ -225,6 +232,7 @@ class Search(object):
                     predicted.append(self.predict_fn(child))
                 dq.extend(zip(childs, predicted))
                 pbar.set_description_str(f'DFS deque {len(dq)}')
+                
         except KeyboardInterrupt:
             print('KeyboardInterrupt')
         return max_AIG
@@ -232,7 +240,8 @@ class Search(object):
     def BFS(self, AIG):
         pbar = tqdm(desc='BFS search', leave=True, ascii=True, unit=' step')
         
-        AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
+        if not '_' in AIG:
+            AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
         dq = deque()
         dq.append((AIG, self.predict_fn(AIG)))
         max_value = float('-inf')
@@ -268,7 +277,8 @@ class Search(object):
     def BestFirstSearch(self, AIG, maxsize=2000):
         pbar = tqdm(desc='BestFS search', leave=True, ascii=True, unit=' step')
 
-        AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
+        if not '_' in AIG:
+            AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
         sd = SortedDict()
         sd[self.predict_fn(AIG)] = AIG
         max_value = float('-inf')

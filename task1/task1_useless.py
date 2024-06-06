@@ -65,7 +65,15 @@ def regularize_aig(eval):
     RESYN2_CMD = "balance; rewrite; refactor; balance; rewrite; rewrite -z; balance; refactor -z; rewrite -z; balance;"
     abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + RESYN2_CMD + "read_lib " + libFile + "; write " + nextState + "; write_bench -l " + nextState + "; map; topo; stime\" > " + logFile
     # abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + RESYN2_CMD + "read_lib " + libFile + ";" + " write_bench -l " + nextState + "; map; topo; stime\" > " + logFile
+    print(nextState)
+    print(f'abcRunCmd: {abcRunCmd}')
+    
+    """
+    alu2_0130622.aig
+    abcRunCmd: yosys-abc -c "read ../project/InitialAIG/train/alu2.aig; balance; rewrite; refactor; balance; rewrite; rewrite -z; balance; refactor -z; rewrite -z; balance;read_lib ../project/lib/7nm/7nm.lib; write alu2_0130622.aig; write_bench -l alu2_0130622.aig; map; topo; stime" > alu2.log
+    """
     os.system(abcRunCmd)
+    # raise ValueError
     with open(logFile) as f:
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
         baseline = float(areaInformation[-9]) * float(areaInformation[-4])
