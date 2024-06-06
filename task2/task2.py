@@ -191,7 +191,7 @@ def search(AIG, search_process, method='greedy', maxsize=200, log_path=None):
             bestVal = finalVal
             final_pred = tmp_pred
             final_AIG_name = tmp_AIG
-    log_message(f'Name: {final_AIG_name} Initial AIG {predict_abc(Initial_AIG)} final pred AIG: {final_pred} final gt AIG: {bestVal}', log_path)
+    log_message(f'Name: {final_AIG_name} Initial AIG: {predict_abc(Initial_AIG)} final pred AIG: {final_pred} final gt AIG: {bestVal}', log_path)
 
 import random
 
