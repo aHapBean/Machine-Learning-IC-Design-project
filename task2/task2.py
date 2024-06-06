@@ -26,8 +26,8 @@ LIBFILE = os.path.join(BASEPATH, 'lib/7nm/7nm.lib')
 def cal_baseline(AIG, train=True, circuitPath=None, libFile=None):
     """根据 InitialAIG 里面的文件来获取 AIG 的 baseline"""
     state = AIG.split('.')[0]
-    logFile = state + LOGFILE
-    nextState = AIG  # current AIG file, 如 alu4.aig
+    logFile = os.path.join('libFile', state + LOGFILE)
+    nextState = os.path.join('aigFile', AIG)  
 
     if circuitPath is None or libFile is None:
         if '_' in state: circuitName, actions = state.split('_')
@@ -116,9 +116,12 @@ def clear_tmp_files():
     os.system("rm -rf ../task2/*.log")
     os.system("rm -rf ../task2/*.aig")
     os.system("rm -rf ../project/test_aig_files/*.aig")
+    os.system("rm -rf aigFile/*.aig")
+    os.system("rm -rf libFile/*.log")
 
 def search(AIG='alu4.aig', method='greedy', maxsize=200, predict_fn=None):
-
+    os.makedirs('libFile', exist_ok=True)
+    os.makedirs('aigFile', exist_ok=True)
     clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
 
     AIG = 'alu4.aig'
@@ -131,8 +134,8 @@ def search(AIG='alu4.aig', method='greedy', maxsize=200, predict_fn=None):
     print('pred', search_process.predict_fn(AIG))
 
     finalVal = predict_abc(AIG)
-    print(finalVal)
+    print('final', finalVal)
 
-search('alu4.aig', method='BestFirstSearch', maxsize=2, predict_fn=predict_abc)
+search('alu4.aig', method='BestFirstSearch', maxsize=24, predict_fn=predict_abc)
 clear_tmp_files()
 

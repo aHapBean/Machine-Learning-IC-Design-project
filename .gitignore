@@ -7,6 +7,8 @@ project/
 task1_copy/
 log/
 log_task2/
+libFile/
+aigFile/
 
 *.whl
 *.zip
