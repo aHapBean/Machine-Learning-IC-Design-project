@@ -10,10 +10,10 @@ from torch_geometric.loader import DataLoader
 import abc_py
 
 class Search(object):
-    def __init__(self, n_steps=10, n_branch=7):
-        self.set_param(n_steps, n_branch)
+    def __init__(self, n_steps=10, n_branch=7, predict_fn=None):
+        self.set_param(n_steps, n_branch, predict_fn)
 
-    def predict_fn(self, AIG):
+    def predict(self, AIG):
         model_predict_now = DeeperEnhancedGCN(num_node_features=2).cuda()
         model_predict_future = DeeperEnhancedGCN(num_node_features=2).cuda()
         model_predict_now.load_state_dict(torch.load('./model_final/now.pth'))
@@ -144,10 +144,11 @@ class Search(object):
         return cur_aig_score + future_aig_score
         
     
-    def set_param(self, n_steps=None, n_branch=None):
+    def set_param(self, n_steps=None, n_branch=None, predict_fn=None):
         # self.predict_fn = predict_fn if predict_fn is not None else self.predict_fn
         self.n_steps = n_steps if n_steps is not None else self.n_steps
         self.n_branch = n_branch if n_branch is not None else self.n_branch
+        self.predict_fn = predict_fn if predict_fn is not None else self.predict
 
     def __call__(self, AIG, method='greedy', maxsize=200):
         if method == 'greedy':

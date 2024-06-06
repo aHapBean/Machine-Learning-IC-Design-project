@@ -41,7 +41,7 @@ def cal_baseline(AIG, train=True, circuitPath=None, libFile=None):
     with open(logFile) as f:
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
         baseline = float(areaInformation[-9]) * float(areaInformation[-4])
-    print("baseline:", baseline)
+    #print("baseline:", baseline)
     return baseline
 
 def evaluate_AIG(AIG, train=True):
@@ -86,39 +86,11 @@ def get_pkl_data():
 # alu4.aig 在 test 文件夹里面, test=False
 #evaluate_AIG('alu2.aig', train=True)
 
-def clear_tmp_files():
-    os.system("rm -rf ../task2/*.log")
-    os.system("rm -rf ../task2/*.aig")
-    os.system("rm -rf ../project/test_aig_files/*.aig")
-
-def search(AIG='alu4.aig', method='greedy', maxsize=200):
-
-    clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
-
-    AIG = 'alu4.aig'
+def predict_abc(AIG):
+    state = AIG.split('.')[0]
     libFile = LIBFILE
     logFile = 'tmp.log'
 
-    # search
-    search_process = Search(n_steps=10, n_branch=7)
-    AIG = search_process(AIG, method=method, maxsize=maxsize)
-
-    print(AIG)
-
-    # 生成 AIG 文件
-    synthesisOpToPosDic = {
-        0: "refactor",
-        1: "refactor -z",
-        2: "rewrite",
-        3: "rewrite -z",
-        4: "resub",
-        5: "resub -z",
-        6: "balance"
-    }
-
-    state = AIG.split('.')[0]
-    print('pred', search_process.predict_fn(AIG))
-    
     circuitName, actions = state.split('_')
     circuitPath = os.path.join(BASEPATH, 'InitialAIG/test/' + circuitName + '.aig') # FIXME: train or test?
     actionCmd = ''
@@ -130,7 +102,7 @@ def search(AIG='alu4.aig', method='greedy', maxsize=200):
     os.system(f"mv {state}.aig {aig_dir}/")
 
     abcRunCmd = "yosys-abc -c \"read " + f"{aig_dir}/{state}.aig" + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
-    print(abcRunCmd)
+    #print(abcRunCmd)
     os.system(abcRunCmd)
     with open(logFile) as f:
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
@@ -138,7 +110,29 @@ def search(AIG='alu4.aig', method='greedy', maxsize=200):
 
     baseline = cal_baseline(AIG, circuitPath=circuitPath, libFile=libFile)
     finalVal = (baseline - adpVal) / baseline
+    return finalVal
+
+def clear_tmp_files():
+    os.system("rm -rf ../task2/*.log")
+    os.system("rm -rf ../task2/*.aig")
+    os.system("rm -rf ../project/test_aig_files/*.aig")
+
+def search(AIG='alu4.aig', method='greedy', maxsize=200, predict_fn=None):
+
+    clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
+
+    AIG = 'alu4.aig'
+
+    # search
+    search_process = Search(n_steps=10, n_branch=7, predict_fn=predict_fn)
+    AIG = search_process(AIG, method=method, maxsize=maxsize)
+
+    print(AIG)
+    print('pred', search_process.predict_fn(AIG))
+
+    finalVal = predict_abc(AIG)
     print(finalVal)
 
-search('alu4.aig', method='BestFirstSearch', maxsize=2)
+search('alu4.aig', method='BestFirstSearch', maxsize=2, predict_fn=predict_abc)
+clear_tmp_files()
 
