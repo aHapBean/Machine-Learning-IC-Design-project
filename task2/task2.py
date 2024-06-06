@@ -87,6 +87,12 @@ def get_pkl_data():
 #evaluate_AIG('alu2.aig', train=True)
 
 def predict_abc(AIG):
+    if type(AIG) == str:
+        return p_abc(AIG)
+    else:
+        return [p_abc(aig) for aig in AIG]
+
+def p_abc(AIG):
     state = AIG.split('.')[0]
     libFile = LIBFILE
     logFile = 'tmp.log'
