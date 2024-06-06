@@ -29,7 +29,9 @@ class Predict(object):
 
             if not os.path.exists(circuitPath) or not os.path.exists(libFile):
                 raise ValueError('path error')
-            logFile = 'tmp.log'
+            
+            randomID = np.random.randint(1000000)
+            logFile = f'tmp_{randomID}.log'
             nextState = AIG + '.aig'  # current AIG file
 
             # Mapping action indices to their corresponding synthesis operations
@@ -140,5 +142,5 @@ class Predict(object):
                 future_aig_score = self.model_predict_future(graph_data).item()
             else:
                 future_aig_score = 0.0
-
+        os.system(f'rm {logFile}')
         return cur_aig_score + future_aig_score
