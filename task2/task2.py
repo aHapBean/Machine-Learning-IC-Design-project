@@ -168,7 +168,7 @@ def search(AIG, search_process, method='greedy', maxsize=200, log_path=None):
         tmp_AIG = AIG.split('.')[0].split('_')[0] + '_' + ac + '.aig'
         
         log_message(f'{tmp_AIG}', log_path)
-        tmp_pred = search_process.predict(tmp_AIG, future=False) # drop the future value !!!
+        tmp_pred = pred_model(tmp_AIG, now=True, future=False)
         log_message(f'pred: {tmp_pred}', log_path)
         finalVal = predict_abc(tmp_AIG)
         log_message(f'gt: {finalVal}', log_path)
