@@ -28,7 +28,10 @@ pred_model = Predict()
 def cal_baseline(AIG, train=True, circuitPath=None, libFile=None):
     """根据 InitialAIG 里面的文件来获取 AIG 的 baseline"""
     state = AIG.split('.')[0]
-    logFile = os.path.join('libFile', state + LOGFILE)
+    randomID = np.random.randint(100000)
+    randomID2 = np.random.randint(100000)
+    
+    logFile = os.path.join('libFile', state + str(randomID) + '_' + str(randomID2) + LOGFILE)
     nextState = os.path.join('aigFile', AIG)  
 
     if circuitPath is None or libFile is None:
@@ -45,6 +48,8 @@ def cal_baseline(AIG, train=True, circuitPath=None, libFile=None):
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
         baseline = float(areaInformation[-9]) * float(areaInformation[-4])
     #print("baseline:", baseline)
+    
+    os.system(f"rm {logFile}")
     return baseline
 
 def evaluate_AIG(AIG, train=True):
@@ -60,6 +65,7 @@ def evaluate_AIG(AIG, train=True):
     abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
     os.system(abcRunCmd)
     
+    # FIXME NOT the name of Log File !!!
     with open(logFile) as f:
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
         eval = float(areaInformation[-9]) * float(areaInformation[-4])
@@ -108,7 +114,10 @@ def predict_abc_gnn(AIG):
 def p_abc(AIG):
     state = AIG.split('.')[0]
     libFile = LIBFILE
-    logFile = 'tmp.log'
+    
+    randomID = np.random.randint(100000)
+    randomID2 = np.random.randint(100000)
+    logFile = f'tmp_{randomID}_{randomID2}.log'
 
     circuitName, actions = state.split('_')
     circuitPath = os.path.join(BASEPATH, 'InitialAIG/test/' + circuitName + '.aig') # FIXME: train or test?
@@ -126,13 +135,16 @@ def p_abc(AIG):
     else:
         pass 
     
+    # the log cannot be shared !!! FIXME 
     abcRunCmd = "yosys-abc -c \"read " + f"{aig_dir}/{state}.aig" + "; read_lib " + libFile + "; map; topo; stime\" > " + logFile
     #print(abcRunCmd)
     os.system(abcRunCmd)
+    # print(abcRunCmd, ' abcRunCmd')
     with open(logFile) as f:
         areaInformation = re.findall('[a-zA-Z0-9.]+', f.readlines()[-1])
         adpVal = float(areaInformation[-9]) * float(areaInformation[-4])
 
+    os.system(f"rm {logFile}")
     baseline = cal_baseline(AIG, circuitPath=circuitPath, libFile=libFile)
     finalVal = (baseline - adpVal) / baseline
     return finalVal
