@@ -7,6 +7,7 @@ import abc_py
 from torch_geometric.data import Data
 from model import GCN, DeeperEnhancedGCN
 from search import Search
+from predict import Predict
 
 synthesisOpToPosDic = {
     0: "refactor",
@@ -22,6 +23,7 @@ BASEPATH = '../project/'
 RESYN2_CMD = "balance; rewrite; refactor; balance; rewrite; rewrite -z; balance; refactor -z; rewrite -z; balance;"
 LOGFILE = 'tmp.log'
 LIBFILE = os.path.join(BASEPATH, 'lib/7nm/7nm.lib')
+pred_model = Predict()
 
 def cal_baseline(AIG, train=True, circuitPath=None, libFile=None):
     """根据 InitialAIG 里面的文件来获取 AIG 的 baseline"""
@@ -90,10 +92,23 @@ def get_pkl_data():
 
 def predict_abc(AIG):
     # return 0
-    if type(AIG) == str:
-        return p_abc(AIG)
-    else:
-        return [p_abc(aig) for aig in AIG]
+    return p_abc(AIG)
+    # if type(AIG) == str:
+    #     return p_abc(AIG)
+    # else:
+    #     return [p_abc(aig) for aig in AIG]
+
+def predict_gnn(AIG):
+    """
+    GNN Now + GNN Future
+    """
+    return pred_model(AIG, now=True, future=True)
+
+def predict_abc_gnn(AIG):
+    """
+    ABC Now + GNN Future
+    """
+    return p_abc(AIG) + pred_model(AIG, now=False, future=True)
 
 def p_abc(AIG):
     state = AIG.split('.')[0]
@@ -103,8 +118,9 @@ def p_abc(AIG):
     circuitName, actions = state.split('_')
     circuitPath = os.path.join(BASEPATH, 'InitialAIG/test/' + circuitName + '.aig') # FIXME: train or test?
     
-    aig_dir = os.path.join(BASEPATH, 'test_aig_files')
+    aig_dir = os.path.join(BASEPATH, 'test_aig_files')  
     
+    # NOTE here
     if not os.path.exists(os.path.join(BASEPATH, 'test_aig_files', state + '.aig')):
         actionCmd = ''
         for action in actions:
@@ -135,15 +151,14 @@ def clear_tmp_files():
 
 from datetime import datetime
 
-def search(AIG, method='greedy', maxsize=200, predict_fn=None, log_path=None, n_steps=10):
+def search(AIG, search_process, method='greedy', maxsize=200, log_path=None):
     os.makedirs('libFile', exist_ok=True)
     os.makedirs('aigFile', exist_ok=True)
     clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
     
     if not '_' in AIG:
         AIG = AIG.split('.')[0] + '_' + '.aig'
-        
-    search_process = Search(n_steps=n_steps, n_branch=7, predict_fn=predict_fn)
+
     AIG = search_process(AIG, method=method, maxsize=maxsize)
 
     actions = AIG.split('.')[0].split('_')[1]
@@ -278,25 +293,29 @@ if __name__ == '__main__':
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
     log_path = f'{log_path}/method_{args.method}_step_{args.n_steps}_maxsize_{args.maxsize}_{current_time}.txt'
-    # if not os.path.exists(log_path):
-    #     os.makedirs(log_path)
     log_message(f'args: {args}', log_path)
     ls_files = os.listdir('../project/InitialAIG/test')
     if args.method == 'BestFirstSearch':
         assert args.maxsize <= 24, 'BestFirstSearch only support maxsize <= 24' # ??? NOTE
 
+    
+    if args.predict == 'abc_now':
+        search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc)
+    elif args.predict == 'gnn_now_gnn_future':
+        search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_gnn)
+        raise NotImplementedError
+    elif args.predict == 'abc_now_gnn_future':
+        search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc_gnn)
+        # raise NotImplementedError
+    else:
+        raise NotImplementedError
+    
     for ls_fl in ls_files:
         time_start = time.time()
         if 'mem_ctrl' in ls_fl:
             ls_fl = ls_fl.replace('mem_ctrl', 'memctrl')
-            
-        if args.predict == 'abc_now':
-            # abc now means only use the abc evaluation
-            search(ls_fl, method=args.method, maxsize=args.maxsize, predict_fn=predict_abc, log_path=log_path, n_steps=args.n_steps)
-        elif args.predict == 'gnn_now_gnn_future':
-            search(ls_fl, method=args.method, maxsize=args.maxsize, predict_fn=None, log_path=log_path, n_steps=args.n_steps)    # NOTE
-        else:
-            raise NotImplementedError
+        
+        search(ls_fl, search_process, method=args.method, maxsize=args.maxsize, log_path=log_path)
         log_message(f'Time cost: {time.time() - time_start:.2f} s', log_path)
         
     clear_tmp_files()
