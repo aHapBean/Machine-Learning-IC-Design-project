@@ -165,6 +165,7 @@ from datetime import datetime
 def search(AIG, search_process, method='greedy', maxsize=200, log_path=None):
     os.makedirs('libFile', exist_ok=True)
     os.makedirs('aigFile', exist_ok=True)
+    os.makedirs('../project/test_aig_files', exist_ok=True)
     # clear_tmp_files() # 删除 task2 文件夹和 project/test_aig_files 中的 .log 和 .aig 文件
     
     if not '_' in AIG:
