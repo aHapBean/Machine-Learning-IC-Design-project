@@ -290,7 +290,7 @@ import time
 def args_parser():
     import argparse
     parser = argparse.ArgumentParser(description='Predict final test dataset')
-    parser.add_argument('--method', type=str, default='greedy', help='search method', choices=['greedy', 'BestFirstSearch', 'DFS', 'BFS'])
+    parser.add_argument('--method', type=str, default='greedy', help='search method', choices=['greedy', 'BestFirstSearch', 'DFS', 'BFS', 'RandomSearch'])
     parser.add_argument('--maxsize', type=int, default=200, help='maxsize only for the BestFirstSearch method')
     parser.add_argument('--predict', type=str, default='abc_now', help='predict method', choices=['abc_now', 'abc_now_gnn_future', 'gnn_now_gnn_future'])
     parser.add_argument('--n_steps', type=int, default=10, help='n_steps for the search process')

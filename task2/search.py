@@ -2,6 +2,7 @@ import numpy as np
 from collections import deque
 from sortedcontainers import SortedDict
 from tqdm import tqdm
+import random
 from model import DeeperEnhancedGCN
 import torch
 import os
@@ -9,6 +10,20 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from predict import Predict
 import abc_py 
+
+def to_base7_string(number):
+    if number == 0:
+        return '0'
+    if number < 0:
+        sign = '-'
+        number = abs(number)
+    else:
+        sign = ''
+    digits = ''
+    while number > 0:
+        digits = str(number % 7) + digits
+        number //= 7
+    return sign + digits
 
 class Search(object):
     def __init__(self, n_steps=10, n_branch=7, predict_fn=None):
@@ -31,6 +46,8 @@ class Search(object):
             output_AIG = self.BFS(AIG)
         elif method == 'BestFirstSearch':
             output_AIG = self.BestFirstSearch(AIG, maxsize)
+        elif method == 'RandomSearch':
+            output_AIG = self.RandomSearch(AIG, maxsize)
         else:
             raise NotImplementedError(f"Method {method} not implemented")
         
@@ -182,3 +199,26 @@ class Search(object):
         except KeyboardInterrupt:
             print('KeyboardInterrupt')
         return max_AIG
+    
+    def RandomSearch(self, AIG, maxsize=2000):
+        # 从 0~8^10-1 中随机选择 maxsize 个数字
+        TOTAL = 7**10
+        samples = random.sample(range(TOTAL), maxsize)
+        circuitName = AIG.split('.')[0]
+        for i in range(maxsize):
+            str7 = to_base7_string(samples[i])
+            samples[i] = circuitName + str7 + '.aig'
+            print(samples[i])
+
+        max_AIG = None
+        max_value = float('-inf')
+        with tqdm(total=maxsize, desc='Random search', leave=True, ascii=True, unit=' step') as pbar:
+            for i in range(maxsize):
+                predicted = self.predict_fn(samples[i])
+                if predicted > max_value:
+                    max_value = predicted
+                    max_AIG = samples[i]
+                pbar.update(1)
+        return max_AIG
+
+        
