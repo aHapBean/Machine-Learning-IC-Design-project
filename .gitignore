@@ -9,6 +9,7 @@ log/
 log_task2/
 libFile/
 aigFile/
+*_ignore/
 
 *.whl
 *.zip
