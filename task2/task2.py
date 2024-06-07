@@ -310,6 +310,9 @@ if __name__ == '__main__':
     if args.method == 'BestFirstSearch':
         assert args.maxsize <= 200, 'BestFirstSearch only support maxsize <= 200' # ??? NOTE
     
+    if args.method == 'RandomSearch':
+        assert args.predict == 'abc_now', 'RandomSearch only support predict abc_now'
+    
     if args.predict == 'abc_now':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc)
     elif args.predict == 'gnn_now_gnn_future':

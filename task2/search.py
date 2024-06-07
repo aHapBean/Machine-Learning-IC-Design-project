@@ -211,7 +211,7 @@ class Search(object):
         for i in range(maxsize):
             str7 = to_base7_string(samples[i])
             samples[i] = circuitName + str7 + '.aig'
-            print(samples[i])
+            # print(samples[i])
 
         max_AIG = None
         max_value = float('-inf')
