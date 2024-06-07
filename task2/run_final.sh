@@ -18,8 +18,9 @@ DFS (depth=4) BFS (depth=4) Greedy BestFS
 
 gnn_now_gnn_future
 DFS (depth=5) BFS (depth=5) Greedy BestFS ?
-
+# 00
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict abc_now
+# 01
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method BFS --predict abc_now
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --method greedy --predict abc_now
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict abc_now
@@ -27,10 +28,21 @@ CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --maxsize 25 --method BestFi
 
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict abc_now_gnn_future
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method BFS --predict abc_now_gnn_future
+
+# 02
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --method greedy --predict abc_now_gnn_future
+# 03
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict abc_now_gnn_future
 
+# 初步判断有一定效果，比如apex结果比log_testing更好
 CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method DFS --predict gnn_now_gnn_future
-CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 4 --method BFS --predict gnn_now_gnn_future
-CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --method greedy --predict gnn_now_gnn_future
-CUDA_VISIBLE_DEVICES=0 python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict gnn_now_gnn_future
+# 
+CUDA_VISIBLE_DEVICES=1 python task2.py --n_steps 4 --method BFS --predict gnn_now_gnn_future
+
+# 4
+CUDA_VISIBLE_DEVICES=2 python task2.py --n_steps 10 --method greedy --predict gnn_now_gnn_future
+CUDA_VISIBLE_DEVICES=2 python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict gnn_now_gnn_future
+
+
+# 可以再加一组 random 的结果
+??????
