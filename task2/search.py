@@ -204,6 +204,9 @@ class Search(object):
         # 从 0~8^10-1 中随机选择 maxsize 个数字
         TOTAL = 7**10
         samples = random.sample(range(TOTAL), maxsize)
+        if not '_' in AIG:
+            AIG = AIG.split('.')[0] + '_.' + AIG.split('.')[1]
+        
         circuitName = AIG.split('.')[0]
         for i in range(maxsize):
             str7 = to_base7_string(samples[i])
