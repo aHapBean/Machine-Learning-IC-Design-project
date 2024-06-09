@@ -7,8 +7,10 @@ project/
 task1_copy/
 log/
 log_task2/
+log_finetune/
 libFile/
 aigFile/
+useless/
 *_ignore/
 
 *.whl

@@ -57,7 +57,8 @@ def evaluate_aig(AIG, libFile, logFile):
         eval = float(areaInformation[-9]) * float(areaInformation[-4])
     return eval
 
-evaluate_score = evaluate_aig(circuitPath, libFile, logFile)
+print('CircuitPath ', circuitPath)
+evaluate_score = evaluate_aig(circuitPath, libFile, logFile)    # NOTE FIXME 这个应该不是传入circuitPath，而是对应的state.aig ！！！！
 print(evaluate_aig(circuitPath, libFile, logFile))
 
 # Regularizing the evaluation using resyn2
@@ -65,8 +66,8 @@ def regularize_aig(eval):
     RESYN2_CMD = "balance; rewrite; refactor; balance; rewrite; rewrite -z; balance; refactor -z; rewrite -z; balance;"
     abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + RESYN2_CMD + "read_lib " + libFile + "; write " + nextState + "; write_bench -l " + nextState + "; map; topo; stime\" > " + logFile
     # abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + RESYN2_CMD + "read_lib " + libFile + ";" + " write_bench -l " + nextState + "; map; topo; stime\" > " + logFile
-    print(nextState)
-    print(f'abcRunCmd: {abcRunCmd}')
+    # print(nextState)
+    # print(f'abcRunCmd: {abcRunCmd}')
     
     """
     alu2_0130622.aig
@@ -81,7 +82,7 @@ def regularize_aig(eval):
         return eval
 
 print(f'normalized: {regularize_aig(evaluate_score)}')  # NOTE
-
+raise ValueError
 # raise ValueError
 # Building the AIG representation through node connectivity
 

@@ -1,43 +1,77 @@
-from model import DeeperEnhancedGCN
-import torch
+import pickle 
 import os
-from torch_geometric.data import Data
-from torch_geometric.loader import DataLoader
+from tqdm import tqdm
+import torch
+from torch_geometric.data import InMemoryDataset, Data
+from torch_geometric.transforms import BaseTransform
 import abc_py
 import numpy as np
+import random
 
-class Predict(object):
-    def __init__(self, finetuned):
-        self.model_predict_now = DeeperEnhancedGCN(num_node_features=2).cuda()
-        if finetuned:
-            self.model_predict_now.load_state_dict(torch.load('./model_final/now_finetune.pth'))
-            print("use the finetuned model !!!!")
+class PYGDataset(InMemoryDataset):
+    def __init__(self, path, size, transform=None, pre_transform=None, pre_transform_custom=None):
+        self.root = os.path.join(path, '..', 'pyg')
+        self.path = path
+        self.size = size
+
+        super(PYGDataset, self).__init__(self.root, transform, pre_transform)
+        if not os.path.exists(self.processed_paths[0]):
+            self.process()
+
+        # task2 normalize
+        self.norm_path = os.path.join(self.root, 'processed', f'data_{self.size}_norm.pt')
+        if pre_transform_custom is not None:
+            if not os.path.exists(self.norm_path):
+                self.apply_pre_transform(pre_transform_custom)
+            self.data, self.slices = torch.load(self.norm_path)
         else:
-            self.model_predict_now.load_state_dict(torch.load('./model_final/now.pth'))
+            self.data, self.slices = torch.load(self.processed_paths[0])
+        
+    @property
+    def raw_file_names(self):
+        return os.listdir(self.path)
+
+    @property
+    def processed_file_names(self):
+        return [f'data_{self.size}_finetune.pt']
+
+    def process(self):
+        data_list = []
+        data_ls = os.listdir(self.path)
+        if type(self.size) == str and self.size == 'all':
+            print(f'sampled data: ALL !! Length: {len(data_ls)}')
+        else:
+            self.size = int(self.size)
+            data_ls = random.sample(data_ls, self.size)      # size of training dataset 
+            print('sampled data length', len(data_ls))
             
-        self.model_predict_future = DeeperEnhancedGCN(num_node_features=2).cuda()
-        self.model_predict_future.load_state_dict(torch.load('./model_final/future.pth'))
+        self.data_ls = data_ls
+        for data_file in tqdm(data_ls, desc="Processing data"):
+            data_path = os.path.join(self.path, data_file)
+            with open(data_path, 'rb') as file:
+                data = pickle.load(file)
+            aig_names = data['input']
+            labels = data['target']
+
+            for aig_name, label in zip(aig_names, labels):
+                graph_data = self.get_graph_data(aig_name, label)
+                data_list.append(graph_data)
+
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0]) # save 成 data.pt
     
-    def __call__(self, AIG, now, future):
-        base_path = '../project'
-        # print(f'\n here {AIG}')
-        if not '_' in AIG:
-            AIG = AIG.split('.')[0] + '_'
-        if '.aig' in AIG:
-            AIG = AIG.replace('.aig', '')
-            
-        circuitName, actions = AIG.split('_')
+    def get_graph_data(self, state, lbl):
+        base_path = '../project/'
+        circuitName, actions = state.split('_')
         circuitPath = os.path.join(base_path, 'InitialAIG/test/' + circuitName + '.aig')   # NOTE only train dir ??应该是, test应该是用来设计aig的
 
-        if not os.path.exists(os.path.join(base_path, 'test_aig_files', AIG + '.aig')):
+        if not os.path.exists(os.path.join(base_path, 'test_aig_files', state + '.aig')):
             libFile = os.path.join(base_path, 'lib/7nm/7nm.lib')
 
             if not os.path.exists(circuitPath) or not os.path.exists(libFile):
                 raise ValueError('path error')
-            
-            randomID = np.random.randint(1000000)
-            logFile = f'tmp_{randomID}.log'
-            nextState = AIG + '.aig'  # current AIG file
+            logFile = 'tmp.log'
+            nextState = state + '.aig'  # current AIG file
 
             # Mapping action indices to their corresponding synthesis operations
             synthesisOpToPosDic = {
@@ -52,27 +86,23 @@ class Predict(object):
 
             # Building the command string for synthesis operations
             actionCmd = ''
-            # print('\n here', AIG)
             for action in actions:
                 actionCmd += (synthesisOpToPosDic[int(action)] + '; ')
 
             initial_abcRunCmd = "yosys-abc -c \"read " + circuitPath + "; " + actionCmd + "read_lib " + libFile + "; write " + nextState + "; print_stats\" > " + logFile
 
-            # NOTE use the same aig file !!!! in task 1 and task 2 (xxx.aig 对应的aig相同)
             os.system(initial_abcRunCmd) 
             if not os.path.exists(os.path.join(base_path, 'test_aig_files/')):
                 os.makedirs(os.path.join(base_path, 'test_aig_files/'))
-            os.system(f"mv {AIG}.aig {os.path.join(base_path, 'test_aig_files/')}")
-            os.system(f'rm {logFile}')
+            os.system(f"mv {state}.aig {os.path.join(base_path, 'test_aig_files/')}")
             # raise ValueError
         else:
             pass
-        
-        
+
         _abc = abc_py.AbcInterface()
         # abcpy.
         _abc.start()
-        aig_path = os.path.join(os.path.join(base_path, 'test_aig_files', AIG + '.aig'))
+        aig_path = os.path.join(os.path.join(base_path, 'test_aig_files', state + '.aig'))
         # _abc.read(state + '.aig')
         _abc.read(aig_path)
         data = {}
@@ -134,18 +164,23 @@ class Predict(object):
         node_features = data['node_features']   # Num node, 2
         edge_index = data['edge_index']
 
-        graph_data = Data(x=node_features, edge_index=edge_index, y=torch.tensor([-1.0]))        # to [1,]
-        
-        dataloader = DataLoader([graph_data], batch_size=1)
-        
-        for itm in dataloader:
-            graph_data = itm.cuda()
-            if now:
-                cur_aig_score = self.model_predict_now(graph_data).item()
-            else:
-                cur_aig_score = 0.0
-            if future:
-                future_aig_score = self.model_predict_future(graph_data).item()
-            else:
-                future_aig_score = 0.0
-        return cur_aig_score + future_aig_score
+        graph_data = Data(x=node_features, edge_index=edge_index, y=torch.tensor([lbl]))        # to [1,]
+        return graph_data
+
+    def apply_pre_transform(self, pre_transform):
+        print("Apply pre_transform...")
+        data, slices = torch.load(self.processed_paths[0])
+        mean = data.y.mean().item()
+        std = data.y.std().item()
+        pre_transform.set_param(mean, std)
+        data = pre_transform(data)
+        torch.save((data, slices), self.norm_path)
+    
+    def __len__(self):
+        return len(self.data.y)
+
+def get_dataset(path, size):
+    return PYGDataset(path, size)
+
+if __name__ == '__main__':
+    get_dataset('../project/project_data')

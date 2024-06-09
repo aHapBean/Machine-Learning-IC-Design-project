@@ -23,7 +23,7 @@ BASEPATH = '../project/'
 RESYN2_CMD = "balance; rewrite; refactor; balance; rewrite; rewrite -z; balance; refactor -z; rewrite -z; balance;"
 LOGFILE = 'tmp.log'
 LIBFILE = os.path.join(BASEPATH, 'lib/7nm/7nm.lib')
-pred_model = Predict()
+# pred_model = None
 
 def cal_baseline(AIG, train=True, circuitPath=None, libFile=None):
     """根据 InitialAIG 里面的文件来获取 AIG 的 baseline"""
@@ -50,9 +50,11 @@ def cal_baseline(AIG, train=True, circuitPath=None, libFile=None):
     #print("baseline:", baseline)
     
     os.system(f"rm {logFile}")
+    os.system(f'rm {nextState}')
     return baseline
 
 def evaluate_AIG(AIG, train=True):
+    # NOTE fix bug here, the log should add rnd to it
     """根据 InitialAIG 里面的文件来获取 AIG 的 regularized score"""
     state = AIG.split('.')[0]
     if '_' in state: circuitName, actions = state.split('_')
@@ -113,6 +115,10 @@ def predict_abc_gnn(AIG):
     ABC Now + GNN Future
     """
     return p_abc(AIG) + pred_model(AIG, now=False, future=True)
+
+def predict_gnn_only_now(AIG):
+    return pred_model(AIG, now=True, future=False)
+
 
 def p_abc(AIG):
     state = AIG.split('.')[0]
@@ -292,14 +298,18 @@ def args_parser():
     parser = argparse.ArgumentParser(description='Predict final test dataset')
     parser.add_argument('--method', type=str, default='greedy', help='search method', choices=['greedy', 'BestFirstSearch', 'DFS', 'BFS', 'RandomSearch'])
     parser.add_argument('--maxsize', type=int, default=200, help='maxsize only for the BestFirstSearch method')
-    parser.add_argument('--predict', type=str, default='abc_now', help='predict method', choices=['abc_now', 'abc_now_gnn_future', 'gnn_now_gnn_future'])
+    parser.add_argument('--predict', type=str, default='abc_now', help='predict method', choices=['abc_now', 'abc_now_gnn_future', 'gnn_now_gnn_future', 'gnn_now'])
     parser.add_argument('--n_steps', type=int, default=10, help='n_steps for the search process')
+    parser.add_argument('--finetuned', action='store_true', help='use finetuned model', default=False)
     args = parser.parse_args()
     return args
 
 if __name__ == '__main__':
     args = args_parser()
-    log_path = f'./log_test_dataset/{args.predict}'
+    if args.finetuned:
+        log_path = f'./log_test_dataset/{args.predict}_finetuned'
+    else:
+        log_path = f'./log_test_dataset/{args.predict}'
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -313,12 +323,19 @@ if __name__ == '__main__':
     if args.method == 'RandomSearch':
         assert args.predict == 'abc_now', 'RandomSearch only support predict abc_now'
     
+    if args.finetuned:
+        assert args.predict == 'gnn_now_gnn_future' or args.predict == 'gnn_now', 'finetuned model only support gnn_now_gnn_future or gnn_now'
+    global pred_model
+    pred_model = Predict(args.finetuned)
+    
     if args.predict == 'abc_now':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc)
     elif args.predict == 'gnn_now_gnn_future':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_gnn)
     elif args.predict == 'abc_now_gnn_future':
         search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_abc_gnn)
+    elif args.predict == 'gnn_now':
+        search_process = Search(n_steps=args.n_steps, n_branch=7, predict_fn=predict_gnn_only_now)
     else:
         raise NotImplementedError
     
