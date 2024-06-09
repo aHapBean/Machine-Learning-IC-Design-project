@@ -1,6 +1,6 @@
 # CS Machine Learning IC Design project
 
-Author: [aHapBean](https://github.com/aHapBean), [zzzhr97](https://github.com/zzzhr97), [XiaoyangLiu39](https://github.com/XiaoyangLiu39)
+Authors: [aHapBean](https://github.com/aHapBean), [zzzhr97](https://github.com/zzzhr97), [XiaoyangLiu39](https://github.com/XiaoyangLiu39)
 
 ## Environment Setup
 
