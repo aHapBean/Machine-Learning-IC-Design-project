@@ -1,4 +1,6 @@
-# CS Machine Learning IC Design project
+# CS3308 Machine Learning IC Design project
+
+The repository of "Machine Learning for Integrated Circuit Design" project in CS3308 machine learning course.
 
 Authors: [aHapBean](https://github.com/aHapBean), [zzzhr97](https://github.com/zzzhr97), [XiaoyangLiu39](https://github.com/XiaoyangLiu39)
 
