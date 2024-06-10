@@ -149,9 +149,9 @@ The parameter settings of these search methods:
 | RandomSearch    | Array          | 500     | 10    |
 
 Additionally, we use three different evaluation functions:
-- **Cur$_{gnn}$ + Future$_{gnn}$:** Combine the values predicted by both GNN models to derive the final evaluation.
-- **Cur$_{abc}$ + Future$_{gnn}$:** Employ `yosys-abc` to calculate the current evaluation and then add it to the predicted reward from the second model to achieve the final evaluation.
-- **Cur$_{abc}$:** Only use `yosys-abc` to predict the current evaluation without future reward. This directly reflects the real scores of the current AIG. This scenario is especially useful for Random Search.
+- **Cur<sub>gnn</sub> + Future<sub>gnn</sub>:** Combine the values predicted by both GNN models to derive the final evaluation.
+- **Cur<sub>abc</sub> + Future<sub>gnn</sub>:** Employ `yosys-abc` to calculate the current evaluation and then add it to the predicted reward from the second model to achieve the final evaluation.
+- **Cur<sub>abc</sub>:** Only use `yosys-abc` to predict the current evaluation without future reward. This directly reflects the real scores of the current AIG. This scenario is especially useful for Random Search.
 
 To optimize the AIG on the test dataset, you can run the following command:
 ```shell
