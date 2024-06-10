@@ -101,7 +101,7 @@ The generated dataset will be stored in `./project/project_finetune_data/`.
 To train the model, run:
 ```bash
 cd task1_finetune/
-CUDA_VISIBLE_DEVICES=[GPU_ID] python main.py --datasize [USED_DATA] --batch-size [BS] --model [MODEL] --lr [LR]
+CUDA_VISIBLE_DEVICES=[GPU_ID] python main.py --batch-size [BS] --model [MODEL] --lr [LR]
 ```
 
 For the GCN+GAT-D mode, we get enhanced test performance. The predictive test performance improves a lot after finetuning, from MSE 0.2310 and MAE 0.3045 to the MSE 0.0105, MAE 0.0608.
