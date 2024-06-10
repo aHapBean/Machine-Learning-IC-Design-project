@@ -73,7 +73,7 @@ The hyperparameters for each model are shown below:
 | GCN+GAT-S   | 200    | Adam      | 0.004         | 64         |
 | GCN+GAT-D   | 200    | Adam      | 0.001         | 32         |
 
-The best checkpoint and log files will be stored in ./task1/log/. The training results (on the validation dataset) obtained by us are shown as follows:
+The best checkpoint and log files will be stored in `./task1/log/`. The training results (on the validation dataset) obtained by us are shown as follows:
 
 | Model       | MSE     | MAE     | Time (s) |
 |-------------|---------|---------|----------|
@@ -110,10 +110,102 @@ The best checkpoint and the log file will be stored in `./task1_finetune/log_fin
 
 ## Task 2 Predictive model training 
 <!-- predict the future score -->
-TODO
+In Task 2, we are going to train a model for predicting future rewards associated with a given AIG. This process follows the same training and testing configurations as Task 1 but employs a distinct dataset tailored specifically for future reward prediction.
+
+To train models that predict the future reward of the AIG file, run the following command:
+``` shell
+cd task2
+CUDA_VISIBLE_DEVICES=[GPU_ID] python main.py --datasize [USED_DATA] --batch-size [BS] --model [MODEL] --lr [LR]
+# We use USED_DATA=5000.
+```
+
+The best checkpoint and log files will be stored in `./task2/log/`. The training results (on the validation dataset) obtained by us are shown as follows:
+
+| Model       | MSE     | MAE     | Time (s) |
+|-------------|---------|---------|----------|
+| GCN         | 0.01007 | 0.0630  | 37921    |
+| GAT         | 0.00931 | 0.0609  | 50632    |
+| GIN         | 0.00915 | 0.0584  | **33324**|
+| GCN+GAT-S   | 00.01061| 0.0658  | 43229    |
+| GCN+GAT-D   | **0.00779** | **0.0544**  | 67658    |
 
 ## Task 2 Final Logic synthesis decision
-TODO
+
+We use the models trained before and `yosys-abc` to give the final evaluation prediction. Then, different search methods are employed to find the optimal sequence of actions:
+- Greedy
+- BFS (Depth-First Search)
+- DFS (Depth-First Search)
+- Best First Search
+- Random Search
+
+The parameter settings of these search methods:
+
+| Methods         | Data Structure | Maxsize | Steps |
+|-----------------|----------------|---------|-------|
+| Greedy          | Array          | Inf     | 10    |
+| BFS             | Queue          | Inf     | 4     |
+| DFS             | Queue          | Inf     | 4     |
+| BestFirstSearch | Priority Queue | 25      | 10    |
+| RandomSearch    | Array          | 500     | 10    |
+
+Additionally, we use three different evaluation functions:
+- **Cur$_{gnn}$ + Future$_{gnn}$:** Combine the values predicted by both GNN models to derive the final evaluation.
+- **Cur$_{abc}$ + Future$_{gnn}$:** Employ `yosys-abc` to calculate the current evaluation and then add it to the predicted reward from the second model to achieve the final evaluation.
+- **Cur$_{abc}$:** Only use `yosys-abc` to predict the current evaluation without future reward. This directly reflects the real scores of the current AIG. This scenario is especially useful for Random Search.
+
+To optimize the AIG on the test dataset, you can run the following command:
+```shell
+# [D/B] denotes DFS or BFS
+python task2.py --n_steps 4 --method [D/B] --predict abc_now
+CUDA_VISIBLE_DEVICES=[GPU_ID] python task2.py --n_steps 4 --method [D/B] --predict abc_now_gnn_future
+CUDA_VISIBLE_DEVICES=[GPU_ID] python task2.py --n_steps 4 --method [D/B] --predict gnn_now_gnn_future
+
+# Greedy
+python task2.py --n_steps 10 --method Greedy --predict abc_now
+CUDA_VISIBLE_DEVICES=[GPU_ID] python task2.py --n_steps 10 --method Greedy --predict abc_now_gnn_future
+CUDA_VISIBLE_DEVICES=[GPU_ID] python task2.py --n_steps 10 --method Greedy --predict gnn_now_gnn_future
+
+# Best First Search
+python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict abc_now
+CUDA_VISIBLE_DEVICES=[GPU_ID] python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict abc_now_gnn_future
+CUDA_VISIBLE_DEVICES=[GPU_ID] python task2.py --n_steps 10 --maxsize 25 --method BestFirstSearch --predict gnn_now_gnn_future
+
+# Random Search
+python task2.py --n_steps 10 --maxsize 500 --method RandomSearch --predict abc_now
+CUDA_VISIBLE_DEVICES=[GPU_ID] python task2.py --n_steps 10 --maxsize 500 --method RandomSearch --predict abc_now_gnn_future
+CUDA_VISIBLE_DEVICES=[GPU_ID] python task2.py --n_steps 10 --maxsize 500 --method RandomSearch --predict gnn_now_gnn_future
+```
+
+The results of different methods:
+<details>
+<summary>
+Results of <strong>Cur<sub class="subscript">gnn</sub> + Future<sub class="subscript">gnn</sub></strong> before finetune
+</summary><p><img src="image/cur_gnn_future_gnn_before.jpg"/></p></details>
+
+<details>
+<summary>
+Results of <strong>Cur<sub class="subscript">gnn</sub> + Future<sub class="subscript">gnn</sub></strong> after finetune
+</summary><p><img src="image/cur_gnn_future_gnn_after.png"/></p></details>
+
+<details>
+<summary>
+Results of <strong>Cur<sub class="subscript">abc</sub> + Future<sub class="subscript">gnn</sub></strong>
+</summary><p><img src="image/cur_abc_future_gnn.jpg"/></p></details>
+
+<details>
+<summary>
+Results of <strong>Cur<sub class="subscript">abc</sub></strong>
+</summary><p><img src="image/cur_abc.jpg"/></p></details>
+
+---
+
+The final results (the best actions and corresponding evaluation values) of each AIG file in test dataset:
+<details>
+<summary>
+<strong>Final results of best actions</strong>
+</summary><p><img src="image/cur_abc.jpg"/></p></details>
+
+The average evaluation values of best results is **0.2560**.
 
 ## maml few shot
 
