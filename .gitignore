@@ -16,6 +16,7 @@ useless/
 *.whl
 *.zip
 *.txt
+!requirements.txt
 *.log
 *.pt
 # *.pth
