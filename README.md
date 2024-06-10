@@ -203,9 +203,7 @@ The final results (the best actions and corresponding evaluation values) of each
 <details>
 <summary>
 <strong>Final results of best actions</strong>
-</summary><p><img src="image/cur_abc.jpg"/></p></details>
-
-The average evaluation values of best results is **0.2560**.
+</summary><p><img src="image/final.png"/></p></details>
 
 ## maml few shot
 
