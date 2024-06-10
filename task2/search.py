@@ -201,7 +201,7 @@ class Search(object):
         return max_AIG
     
     def RandomSearch(self, AIG, maxsize=2000):
-        # 从 0~8^10-1 中随机选择 maxsize 个数字
+        # 从 0~7^10-1 中随机选择 maxsize 个数字
         TOTAL = 7**10
         samples = random.sample(range(TOTAL), maxsize)
         if not '_' in AIG:
