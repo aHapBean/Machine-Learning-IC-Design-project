@@ -214,7 +214,7 @@ The detailed MAML (Model-Agnostic Meta-Learning) algorithm is described below. F
 <strong>MAML algorithm</strong>
 </summary>
 <div align=center>
-    <img src="image/maml.png" alt="clash" style="width: 60%;">
+    <img src="image/maml.png" alt="maml" style="width: 60%;">
 </div></details>
 
 
