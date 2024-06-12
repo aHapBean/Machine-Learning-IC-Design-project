@@ -1,0 +1,23 @@
+# python -u 6get_aig.py --rank 0 > task1/0.log &
+python -u 6get_aig.py --rank 1 > task1/1.log &
+python -u 6get_aig.py --rank 2 > task1/2.log &
+python -u 6get_aig.py --rank 3 > task1/3.log &
+python -u 6get_aig.py --rank 4 > task1/4.log &
+python -u 6get_aig.py --rank 5 > task1/5.log &
+python -u 6get_aig.py --rank 6 > task1/6.log &
+python -u 6get_aig.py --rank 7 > task1/7.log &
+python -u 6get_aig.py --rank 8 > task1/8.log &
+python -u 6get_aig.py --rank 9 > task1/9.log &
+python -u 6get_aig.py --rank 10 > task1/10.log &
+python -u 6get_aig.py --rank 11 > task1/11.log &
+python -u 6get_aig.py --rank 12 > task1/12.log &
+python -u 6get_aig.py --rank 13 > task1/13.log &
+python -u 6get_aig.py --rank 14 > task1/14.log &
+python -u 6get_aig.py --rank 15 > task1/15.log &
+python -u 6get_aig.py --rank 16 > task1/16.log &
+python -u 6get_aig.py --rank 17 > task1/17.log &
+python -u 6get_aig.py --rank 18 > task1/18.log &
+python -u 6get_aig.py --rank 19 > task1/19.log &
+python -u 6get_aig.py --rank 20 > task1/20.log &
+python -u 6get_aig.py --rank 21 > task1/21.log &
+python -u 6get_aig.py --rank 22 > task1/22.log &
