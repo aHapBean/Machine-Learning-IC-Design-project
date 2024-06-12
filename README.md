@@ -205,9 +205,18 @@ The final results (the best actions and corresponding evaluation values) of each
 <strong>Final results of best actions</strong>
 </summary><p><img src="image/final.png"/></p></details>
 
-## maml few shot
+## Model-Agnostic Meta-Learning
+This is an exploration into few-shot learning, aimed at addressing the issue where models overfit on the training set but perform poorly on the test set. The IC graphs exhibit significant variability, presenting a substantial challenge for the model to effectively manage a new IC graph and its variants for the first time. Few-shot learning enables the model to quickly adapt to a new IC graph and perform consistently.
 
-This is xxx...,see [MAML_README](./maml_few_shot/README.md) for details.
+The detailed MAML (Model-Agnostic Meta-Learning) algorithm is described below. For more information, please refer to the [MAML_README](./maml_few_shot/README.md) for details.
+<details>
+<summary>
+<strong>MAML algorithm</strong>
+</summary>
+<div align=center>
+    <img src="image/maml.png" alt="clash" style="width: 60%;">
+</div></details>
+
 
 <!-- ## TODO
 
